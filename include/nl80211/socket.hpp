@@ -9,6 +9,8 @@
 #include <linux/nl80211.h>
 
 namespace nl80211 {
+  class Message;
+
   class Socket {
   private:
     std::unique_ptr<nl_sock, decltype(&nl_socket_free)> m_nlsock;
@@ -23,11 +25,7 @@ namespace nl80211 {
     Socket& operator=(Socket&&) = delete;
 
     int get_driver_id() const;
-
-    void new_key(std::uint32_t if_idx, std::uint8_t key_idx, std::uint32_t cipher,
-      std::array<std::uint8_t, 6> const& mac, std::vector<std::uint8_t> const& key);
-    void del_key(std::uint32_t if_idx, std::uint8_t key_idx,
-      std::array<std::uint8_t, 6> const& mac);
-    void set_interface_mode(std::uint32_t if_idx, nl80211_iftype mode);
+    void send_message(Message& msg);
+    void recv_messages();
   };
 }

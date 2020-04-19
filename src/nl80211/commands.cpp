@@ -1,68 +1,37 @@
 #include "nl80211/commands.hpp"
+#include "nl80211/message.hpp"
 
 namespace nl80211::commands {
 
-  void Message::put(nl80211_attrs attr, std::uint32_t v) {
-    int res = nla_put_u32(m_nl_msg.get(), attr, v);
-    if(res < 0)
-      //TODO: better exception
-      throw "nla_put";
-  }
-
-  void Message::put(nl80211_attrs attr, std::uint16_t v) {
-    int res = nla_put_u16(m_nl_msg.get(), attr, v);
-    if(res < 0)
-      //TODO: better exception
-      throw "nla_put";
-  }
-
-  void Message::put(nl80211_attrs attr, std::uint8_t v) {
-    int res = nla_put_u8(m_nl_msg.get(), attr, v);
-    if(res < 0)
-      //TODO: better exception
-      throw "nla_put";
-  }
-
-  void Message::put(nl80211_attrs attr) {
-    int res = nla_put_flag(m_nl_msg.get(), attr);
-    if(res < 0)
-      //TODO: better exception
-      throw "nla_put";
-  }
-
-  void Message::put(nl80211_attrs attr, std::vector<std::uint8_t> const& v) {
-    int res = nla_put(m_nl_msg.get(), attr, v.size(), v.data());
-    if(res < 0)
-      //TODO: better exception
-      throw "nla_put";
-  }
-
-  void Message::put(nl80211_attrs attr, std::string const& s) {
-    int res = nla_put(m_nl_msg.get(), attr, s.size(), s.c_str());
-    if(res < 0)
-      //TODO: better exception
-      throw "nla_put";
-  }
-
-  Message::Message(nl80211_commands cmd, int driver_id, std::uint32_t if_idx) :
-    m_nl_msg(nlmsg_alloc(), nlmsg_free)
+  void new_key(Socket& nlsock, std::uint32_t if_idx, std::uint8_t key_idx,
+    std::uint32_t cipher, std::array<std::uint8_t, 6> const& mac,
+    std::vector<std::uint8_t> const& key)
   {
-    if(m_nl_msg.get() == nullptr)
-      throw std::bad_alloc();
-
-    void* p_res = genlmsg_put(m_nl_msg.get(), 0, 0, driver_id, 0, 0, cmd, 0);
-    if(p_res == nullptr)
-      //TODO: better exception
-      throw "genlmsg_put";
-    put(NL80211_ATTR_IFINDEX, if_idx);
+    Message msg(NL80211_CMD_NEW_KEY, nlsock.get_driver_id(), if_idx);
+    msg.put(NL80211_ATTR_KEY_DATA, key);
+    msg.put(NL80211_ATTR_KEY_CIPHER, cipher);
+    msg.put(NL80211_ATTR_MAC, std::vector<std::uint8_t>(mac.begin(), mac.end()));
+    msg.put(NL80211_ATTR_KEY_TYPE, static_cast<std::uint32_t>(NL80211_KEYTYPE_PAIRWISE));
+    msg.put(NL80211_ATTR_KEY_IDX, key_idx);
+    nlsock.send_message(msg);
+    nlsock.recv_messages();
   }
 
-  void Message::send(nl_sock* sock) {
-    int ret = nl_send_auto(sock, m_nl_msg.get());
-  	if(ret < 0)
-      //TODO: better exception
-      throw "nl_send_auto";
-
-  	nl_recvmsgs_default(sock);
+  void del_key(Socket& nlsock, std::uint32_t if_idx, std::uint8_t key_idx,
+    std::array<std::uint8_t, 6> const& mac)
+  {
+    Message msg(NL80211_CMD_DEL_KEY, nlsock.get_driver_id(), if_idx);
+    msg.put(NL80211_ATTR_MAC, std::vector<std::uint8_t>(mac.begin(), mac.end()));
+    msg.put(NL80211_ATTR_KEY_IDX, key_idx);
+    nlsock.send_message(msg);
+    nlsock.recv_messages();
   }
+
+  void set_interface_mode(Socket& nlsock, std::uint32_t if_idx, nl80211_iftype mode) {
+    Message msg(NL80211_CMD_SET_INTERFACE, nlsock.get_driver_id(), if_idx);
+	  msg.put(NL80211_ATTR_IFTYPE, static_cast<std::uint32_t>(mode));
+    nlsock.send_message(msg);
+    nlsock.recv_messages();
+  }
+
 }

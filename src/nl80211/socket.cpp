@@ -1,5 +1,5 @@
 #include "nl80211/socket.hpp"
-#include "nl80211/commands.hpp"
+#include "nl80211/message.hpp"
 
 namespace nl80211 {
 
@@ -26,31 +26,14 @@ namespace nl80211 {
     return m_driver_id;
   }
 
-  void Socket::new_key(std::uint32_t if_idx, std::uint8_t key_idx,
-    std::uint32_t cipher, std::array<std::uint8_t, 6> const& mac,
-    std::vector<std::uint8_t> const& key)
-  {
-    commands::Message msg(NL80211_CMD_NEW_KEY, m_driver_id, if_idx);
-    msg.put(NL80211_ATTR_KEY_DATA, key);
-    msg.put(NL80211_ATTR_KEY_CIPHER, cipher);
-    msg.put(NL80211_ATTR_MAC, std::vector<std::uint8_t>(mac.begin(), mac.end()));
-    msg.put(NL80211_ATTR_KEY_TYPE, static_cast<std::uint32_t>(NL80211_KEYTYPE_PAIRWISE));
-    msg.put(NL80211_ATTR_KEY_IDX, key_idx);
-    msg.send(m_nlsock.get());
+  void Socket::send_message(Message& msg) {
+    int ret = nl_send_auto(m_nlsock.get(), msg.m_nl_msg.get());
+  	if(ret < 0)
+      //TODO: better exception
+      throw "nl_send_auto";
   }
 
-  void Socket::del_key(std::uint32_t if_idx, std::uint8_t key_idx,
-    std::array<std::uint8_t, 6> const& mac)
-  {
-    commands::Message msg(NL80211_CMD_DEL_KEY, m_driver_id, if_idx);
-    msg.put(NL80211_ATTR_MAC, std::vector<std::uint8_t>(mac.begin(), mac.end()));
-    msg.put(NL80211_ATTR_KEY_IDX, key_idx);
-    msg.send(m_nlsock.get());
-  }
-
-  void Socket::set_interface_mode(std::uint32_t if_idx, nl80211_iftype mode) {
-    commands::Message msg(NL80211_CMD_SET_INTERFACE, m_driver_id, if_idx);
-	  msg.put(NL80211_ATTR_IFTYPE, static_cast<std::uint32_t>(mode));
-    msg.send(m_nlsock.get());
+  void Socket::recv_messages() {
+    nl_recvmsgs_default(m_nlsock.get());
   }
 }
