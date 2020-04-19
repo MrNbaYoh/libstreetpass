@@ -28,4 +28,18 @@ namespace nl80211 {
     void put(nl80211_attrs attr, std::vector<std::uint8_t> const& v);
     void put(nl80211_attrs attr, std::string const& s);
   };
+
+  class MessageParser {
+  private:
+    std::array<nlattr*, NL80211_ATTR_MAX + 1> m_tb_msg;
+  public:
+    MessageParser(nl_msg* nlmsg);
+
+    MessageParser(const MessageParser&) = delete;
+    MessageParser& operator=(const MessageParser&) = delete;
+    MessageParser(MessageParser&&) = delete;
+    MessageParser& operator=(MessageParser&&) = delete;
+
+    std::vector<std::uint8_t> get(nl80211_attrs attr) const;
+  };
 }

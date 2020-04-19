@@ -56,4 +56,27 @@ namespace nl80211 {
       throw "genlmsg_put";
     put(NL80211_ATTR_IFINDEX, if_idx);
   }
+
+  MessageParser::MessageParser(nl_msg* nlmsg) {
+    genlmsghdr *gnlh = static_cast<genlmsghdr *>(nlmsg_data(nlmsg_hdr(nlmsg)));
+    if(gnlh == nullptr)
+      //TODO: better exception
+      throw "gnlh is null";
+
+    int ret = nla_parse(m_tb_msg.data(), NL80211_ATTR_MAX,
+      genlmsg_attrdata(gnlh, 0), genlmsg_attrlen(gnlh, 0), NULL);
+    if(ret < 0)
+      //TODO: better exception
+      throw "nla_parse";
+  }
+
+  std::vector<std::uint8_t> MessageParser::get(nl80211_attrs attr) const {
+    if(m_tb_msg.at(NL80211_ATTR_FRAME) == nullptr)
+      return std::vector<std::uint8_t>();
+
+    int len = nla_len(m_tb_msg.at(NL80211_ATTR_FRAME));
+		std::uint8_t* data =
+      static_cast<std::uint8_t*>(nla_data(m_tb_msg.at(NL80211_ATTR_FRAME)));
+    return std::vector<std::uint8_t>(data, data + len);
+  }
 }
