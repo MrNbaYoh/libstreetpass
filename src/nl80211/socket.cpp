@@ -34,6 +34,9 @@ namespace nl80211 {
   }
 
   void Socket::recv_messages() {
-    nl_recvmsgs_default(m_nlsock.get());
+    int ret = nl_recvmsgs_default(m_nlsock.get());
+    if(ret < 0)
+      //TODO: better exception
+      throw "nl_recvmsgs_default";
   }
 }
