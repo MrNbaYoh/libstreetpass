@@ -17,7 +17,7 @@ namespace ifioctl {
   short get_interface_flags(int socket, std::string if_name) {
     struct ifreq ifr;
 
-  	std::strncpy(ifr.ifr_name, if_name.c_str(), IFNAMSIZ);
+  	if_name.copy(ifr.ifr_name, IFNAMSIZ, 0);
   	int ret = ioctl(socket, SIOCGIFFLAGS, &ifr);
   	if(ret < 0)
   		//TODO: better exception
@@ -30,7 +30,7 @@ namespace ifioctl {
     struct ifreq ifr;
 
   	ifr.ifr_flags = flags;
-  	strncpy(ifr.ifr_name, if_name.c_str(), IFNAMSIZ);
+  	if_name.copy(ifr.ifr_name, IFNAMSIZ);
   	int ret = ioctl(socket, SIOCSIFFLAGS, &ifr);
   	if(ret < 0)
   		//TODO: better exception
@@ -50,7 +50,7 @@ namespace ifioctl {
   std::array<std::uint8_t, 6> get_interface_hwaddr(int socket, std::string if_name) {
     struct ifreq ifr;
 
-  	std::strncpy(ifr.ifr_name, if_name.c_str(), IFNAMSIZ);
+  	if_name.copy(ifr.ifr_name, IFNAMSIZ);
   	int ret = ioctl(socket, SIOCGIFHWADDR, &ifr);
   	if(ret < 0)
   		//TODO: better exception
@@ -64,7 +64,7 @@ namespace ifioctl {
   void set_interface_hwaddr(int socket, std::string if_name, std::array<std::uint8_t, 6> const& addr) {
     struct ifreq ifr;
 
-  	std::strncpy(ifr.ifr_name, if_name.c_str(), IFNAMSIZ);
+  	if_name.copy(ifr.ifr_name, IFNAMSIZ);
   	std::copy(std::begin(addr), std::end(addr), ifr.ifr_hwaddr.sa_data);
   	ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
 
