@@ -22,8 +22,9 @@ namespace nl80211::commands {
     void put(nl80211_attrs attr, std::uint16_t v);
     void put(nl80211_attrs attr, std::uint8_t v);
     void put(nl80211_attrs attr);
-    void put(nl80211_attrs attr, std::vector<std::uint8_t> v);
-    void put(nl80211_attrs attr, std::string s);
+    void put(nl80211_attrs attr, std::vector<std::uint8_t> const& v);
+    void put(nl80211_attrs attr, std::string const& s);
+
     void send(nl_sock* sock);
   };
 }

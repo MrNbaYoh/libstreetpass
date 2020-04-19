@@ -2,9 +2,11 @@
 #include <exception>
 #include <memory>
 #include <functional>
+#include <array>
 #include <netlink/netlink.h>
 #include <netlink/genl/genl.h>
 #include <netlink/genl/ctrl.h>
+#include <linux/nl80211.h>
 
 namespace nl80211 {
   class Socket {
@@ -21,5 +23,11 @@ namespace nl80211 {
     Socket& operator=(Socket&&) = delete;
 
     int get_driver_id() const;
+
+    void new_key(std::uint32_t if_idx, std::uint8_t key_idx, std::uint32_t cipher,
+      std::array<std::uint8_t, 6> const& mac, std::vector<std::uint8_t> const& key);
+    void del_key(std::uint32_t if_idx, std::uint8_t key_idx,
+      std::array<std::uint8_t, 6> const& mac);
+    void set_interface_mode(std::uint32_t if_idx, nl80211_iftype mode);
   };
 }

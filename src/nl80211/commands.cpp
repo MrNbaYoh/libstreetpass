@@ -30,14 +30,14 @@ namespace nl80211::commands {
       throw "nla_put";
   }
 
-  void Message::put(nl80211_attrs attr, std::vector<std::uint8_t> v) {
+  void Message::put(nl80211_attrs attr, std::vector<std::uint8_t> const& v) {
     int res = nla_put(m_nl_msg.get(), attr, v.size(), v.data());
     if(res < 0)
       //TODO: better exception
       throw "nla_put";
   }
 
-  void Message::put(nl80211_attrs attr, std::string s) {
+  void Message::put(nl80211_attrs attr, std::string const& s) {
     int res = nla_put(m_nl_msg.get(), attr, s.size(), s.c_str());
     if(res < 0)
       //TODO: better exception
@@ -50,7 +50,7 @@ namespace nl80211::commands {
     if(m_nl_msg.get() == nullptr)
       throw std::bad_alloc();
 
-    void* p_res = genlmsg_put(m_nl_msg.get(), 0, 0, driver_id, 0, 0, NL80211_CMD_JOIN_IBSS, 0);
+    void* p_res = genlmsg_put(m_nl_msg.get(), 0, 0, driver_id, 0, 0, cmd, 0);
     if(p_res == nullptr)
       //TODO: better exception
       throw "genlmsg_put";
