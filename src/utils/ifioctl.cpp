@@ -81,7 +81,7 @@ namespace ifioctl {
     int ret = ioctl(socket, SIOCGIFINDEX, &ifr);
     if(ret < 0)
       //TODO: better exception
-      throw "set_interface_flags";
+      throw "get_interface_index";
 
     return ifr.ifr_ifindex;
   }
