@@ -74,12 +74,12 @@ namespace nl80211 {
     int len = nla_len(m_tb_msg.at(attr));
 		std::uint8_t* d =
       static_cast<std::uint8_t*>(nla_data(m_tb_msg.at(attr)));
-    data = std::vector<std::uint8_t>(d, d + len);
+    data.insert(data.end(), d, d + len);
   }
 
   void MessageParser::get(nl80211_attrs attr, std::string& str) const {
 		char* s = nla_get_string(m_tb_msg.at(attr));
-    str = std::string(s);
+    str.insert(str.size(), s);
   }
 
   void MessageParser::get(nl80211_attrs attr, std::uint32_t& w) const {
