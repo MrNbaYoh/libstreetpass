@@ -32,6 +32,12 @@ namespace nl80211 {
   class MessageParser {
   private:
     std::array<nlattr*, NL80211_ATTR_MAX + 1> m_tb_msg;
+
+    void get(nl80211_attrs attr, std::uint32_t& w) const;
+    void get(nl80211_attrs attr, std::uint16_t& w) const;
+    void get(nl80211_attrs attr, std::uint8_t& w) const;
+    void get(nl80211_attrs attr, std::vector<std::uint8_t>& data) const;
+    void get(nl80211_attrs attr, std::string& str) const;
   public:
     MessageParser(nl_msg* nlmsg);
 
@@ -40,6 +46,15 @@ namespace nl80211 {
     MessageParser(MessageParser&&) = delete;
     MessageParser& operator=(MessageParser&&) = delete;
 
-    std::vector<std::uint8_t> get(nl80211_attrs attr) const;
+    template<typename T>
+    T get(nl80211_attrs attr) const {
+      if(m_tb_msg.at(NL80211_ATTR_FRAME) == nullptr)
+        //TODO: better exception
+        throw "invalid attr";
+
+      T t;
+      get(attr, t);
+      return t;
+    }
   };
 }

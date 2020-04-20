@@ -70,13 +70,27 @@ namespace nl80211 {
       throw "nla_parse";
   }
 
-  std::vector<std::uint8_t> MessageParser::get(nl80211_attrs attr) const {
-    if(m_tb_msg.at(NL80211_ATTR_FRAME) == nullptr)
-      return std::vector<std::uint8_t>();
+  void MessageParser::get(nl80211_attrs attr, std::vector<std::uint8_t>& data) const {
+    int len = nla_len(m_tb_msg.at(attr));
+		std::uint8_t* d =
+      static_cast<std::uint8_t*>(nla_data(m_tb_msg.at(attr)));
+    data = std::vector<std::uint8_t>(d, d + len);
+  }
 
-    int len = nla_len(m_tb_msg.at(NL80211_ATTR_FRAME));
-		std::uint8_t* data =
-      static_cast<std::uint8_t*>(nla_data(m_tb_msg.at(NL80211_ATTR_FRAME)));
-    return std::vector<std::uint8_t>(data, data + len);
+  void MessageParser::get(nl80211_attrs attr, std::string& str) const {
+		char* s = nla_get_string(m_tb_msg.at(attr));
+    str = std::string(s);
+  }
+
+  void MessageParser::get(nl80211_attrs attr, std::uint32_t& w) const {
+    w = nla_get_u32(m_tb_msg.at(attr));
+  }
+
+  void MessageParser::get(nl80211_attrs attr, std::uint16_t& w) const {
+    w = nla_get_u16(m_tb_msg.at(attr));
+  }
+
+  void MessageParser::get(nl80211_attrs attr, std::uint8_t& w) const {
+    w = nla_get_u8(m_tb_msg.at(attr));
   }
 }
