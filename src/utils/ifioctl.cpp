@@ -14,10 +14,10 @@ namespace ifioctl {
     return res;
   }
 
-  short get_interface_flags(int socket, std::string if_name) {
-    struct ifreq ifr;
+  short get_interface_flags(int socket, std::string const& if_name) {
+    struct ifreq ifr = {};
 
-  	if_name.copy(ifr.ifr_name, IFNAMSIZ, 0);
+  	if_name.copy(ifr.ifr_name, IFNAMSIZ - 1, 0);
   	int ret = ioctl(socket, SIOCGIFFLAGS, &ifr);
   	if(ret < 0)
   		//TODO: better exception
@@ -26,31 +26,31 @@ namespace ifioctl {
   	return ifr.ifr_flags;
   }
 
-  void set_interface_flags(int socket, std::string if_name, short flags) {
-    struct ifreq ifr;
+  void set_interface_flags(int socket, std::string const& if_name, short flags) {
+    struct ifreq ifr = {};
 
   	ifr.ifr_flags = flags;
-  	if_name.copy(ifr.ifr_name, IFNAMSIZ);
+  	if_name.copy(ifr.ifr_name, IFNAMSIZ - 1);
   	int ret = ioctl(socket, SIOCSIFFLAGS, &ifr);
   	if(ret < 0)
   		//TODO: better exception
       throw "set_interface_flags";
   }
 
-  void set_interface_up(int socket, std::string if_name) {
+  void set_interface_up(int socket, std::string const& if_name) {
   	short flags = get_interface_flags(socket, if_name);
   	set_interface_flags(socket, if_name, flags | IFF_UP);
   }
 
-  void set_interface_down(int socket, std::string if_name) {
+  void set_interface_down(int socket, std::string const& if_name) {
     short flags = get_interface_flags(socket, if_name);
   	set_interface_flags(socket, if_name, flags & ~IFF_UP);
   }
 
-  std::array<std::uint8_t, 6> get_interface_hwaddr(int socket, std::string if_name) {
-    struct ifreq ifr;
+  std::array<std::uint8_t, 6> get_interface_hwaddr(int socket, std::string const& if_name) {
+    struct ifreq ifr = {};
 
-  	if_name.copy(ifr.ifr_name, IFNAMSIZ);
+  	if_name.copy(ifr.ifr_name, IFNAMSIZ - 1);
   	int ret = ioctl(socket, SIOCGIFHWADDR, &ifr);
   	if(ret < 0)
   		//TODO: better exception
@@ -61,10 +61,10 @@ namespace ifioctl {
   	return addr;
   }
 
-  void set_interface_hwaddr(int socket, std::string if_name, std::array<std::uint8_t, 6> const& addr) {
-    struct ifreq ifr;
+  void set_interface_hwaddr(int socket, std::string const& if_name, std::array<std::uint8_t, 6> const& addr) {
+    struct ifreq ifr = {};
 
-  	if_name.copy(ifr.ifr_name, IFNAMSIZ);
+  	if_name.copy(ifr.ifr_name, IFNAMSIZ - 1);
   	std::copy(std::begin(addr), std::end(addr), ifr.ifr_hwaddr.sa_data);
   	ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
 
@@ -72,5 +72,17 @@ namespace ifioctl {
   	if(ret < 0)
   		//TODO: better exception
       throw "set_interface_hwaddr";
+  }
+
+  int get_interface_index(int socket, std::string const& if_name) {
+    struct ifreq ifr = {};
+
+    if_name.copy(ifr.ifr_name, IFNAMSIZ - 1);
+    int ret = ioctl(socket, SIOCGIFINDEX, &ifr);
+    if(ret < 0)
+      //TODO: better exception
+      throw "set_interface_flags";
+
+    return ifr.ifr_ifindex;
   }
 }
