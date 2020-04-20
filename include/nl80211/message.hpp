@@ -38,6 +38,7 @@ namespace nl80211 {
     void get(nl80211_attrs attr, std::uint8_t& w) const;
     void get(nl80211_attrs attr, std::vector<std::uint8_t>& data) const;
     void get(nl80211_attrs attr, std::string& str) const;
+    void get(nl80211_attrs attr, bool& b) const;
   public:
     MessageParser(nl_msg* nlmsg);
 

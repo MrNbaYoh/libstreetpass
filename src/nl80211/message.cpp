@@ -93,4 +93,8 @@ namespace nl80211 {
   void MessageParser::get(nl80211_attrs attr, std::uint8_t& w) const {
     w = nla_get_u8(m_tb_msg.at(attr));
   }
+
+  void MessageParser::get(nl80211_attrs attr, bool& b) const {
+    b = nla_get_flag(m_tb_msg.at(attr));
+  }
 }
