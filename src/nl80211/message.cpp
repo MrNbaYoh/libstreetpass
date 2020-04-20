@@ -38,13 +38,13 @@ namespace nl80211 {
   }
 
   void Message::put(nl80211_attrs attr, std::string const& s) {
-    int res = nla_put(m_nl_msg.get(), attr, s.size(), s.c_str());
+    int res = nla_put_string(m_nl_msg.get(), attr, s.c_str());
     if(res < 0)
       //TODO: better exception
       throw "nla_put";
   }
 
-  Message::Message(nl80211_commands cmd, int driver_id, std::uint32_t if_idx) :
+  Message::Message(nl80211_commands cmd, int driver_id) :
     m_nl_msg(nlmsg_alloc(), nlmsg_free)
   {
     if(m_nl_msg.get() == nullptr)
@@ -54,7 +54,6 @@ namespace nl80211 {
     if(p_res == nullptr)
       //TODO: better exception
       throw "genlmsg_put";
-    put(NL80211_ATTR_IFINDEX, if_idx);
   }
 
   MessageParser::MessageParser(nl_msg* nlmsg) {
@@ -63,11 +62,16 @@ namespace nl80211 {
       //TODO: better exception
       throw "gnlh is null";
 
+    cmd = gnlh->cmd;
     int ret = nla_parse(m_tb_msg.data(), NL80211_ATTR_MAX,
       genlmsg_attrdata(gnlh, 0), genlmsg_attrlen(gnlh, 0), NULL);
     if(ret < 0)
       //TODO: better exception
       throw "nla_parse";
+  }
+
+  std::uint8_t MessageParser::get_command() const {
+    return cmd;
   }
 
   void MessageParser::get(nl80211_attrs attr, std::vector<std::uint8_t>& data) const {

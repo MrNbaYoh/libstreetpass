@@ -14,7 +14,7 @@ namespace nl80211 {
     std::unique_ptr<nl_msg, decltype(&nlmsg_free)> m_nl_msg;
     friend void Socket::send_message(Message&);
   public:
-    Message(nl80211_commands cmd, int driver_id, std::uint32_t if_idx);
+    Message(nl80211_commands cmd, int driver_id);
 
     Message(const Message&) = delete;
     Message& operator=(const Message&) = delete;
@@ -32,6 +32,7 @@ namespace nl80211 {
   class MessageParser {
   private:
     std::array<nlattr*, NL80211_ATTR_MAX + 1> m_tb_msg;
+    std::uint8_t cmd;
 
     void get(nl80211_attrs attr, std::uint32_t& w) const;
     void get(nl80211_attrs attr, std::uint16_t& w) const;
@@ -47,9 +48,11 @@ namespace nl80211 {
     MessageParser(MessageParser&&) = delete;
     MessageParser& operator=(MessageParser&&) = delete;
 
+    std::uint8_t get_command() const;
+
     template<typename T>
     T get(nl80211_attrs attr) const {
-      if(m_tb_msg.at(NL80211_ATTR_FRAME) == nullptr)
+      if(m_tb_msg.at(attr) == nullptr)
         //TODO: better exception
         throw "invalid attr";
 
