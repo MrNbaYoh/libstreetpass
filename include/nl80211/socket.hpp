@@ -28,7 +28,8 @@ namespace nl80211 {
     int get_driver_id() const;
     void send_message(Message& msg);
     void recv_messages();
-    void recv_messages(std::function<int(MessageParser&, void*)> func,
-      void* arg);
+    void recv_messages(
+      std::optional<std::function<int(MessageParser&, void*)>> opt_callback,
+      std::function<void(int, void*)> err_callback, void* arg);
   };
 }

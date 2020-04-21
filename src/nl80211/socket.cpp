@@ -40,31 +40,41 @@ namespace nl80211 {
       throw "nl_recvmsgs_default";
   }
 
-  int noop_seq_check(struct nl_msg *msg, void *arg) {
-  	return NL_OK;
-  }
-
-  struct recv_msg_args {
-    std::function<int(MessageParser&, void*)> func;
-    void* arg;
-  };
-
-  int recv_msg_cb(nl_msg *nlmsg, void *arg) {
-    struct recv_msg_args* args = static_cast<struct recv_msg_args*>(arg);
-    MessageParser msg(nlmsg);
-    return args->func(msg, args->arg);
-  }
-
-  void Socket::recv_messages(std::function<int(MessageParser&, void*)> func, void* arg) {
+  void Socket::recv_messages(std::optional<std::function<int(MessageParser&, void*)>> opt_callback, std::function<void(int, void*)> err_callback, void* arg) {
     nl_cb* cb = nl_cb_alloc(NL_CB_DEFAULT);
     if(cb == nullptr)
       //TODO: better exception
       throw "nl_cb_alloc";
 
-    struct recv_msg_args args = {func, arg};
+    auto noop_seq_check = [](nl_msg*, void*) -> int {
+      return NL_OK;
+    };
+
+    auto err_msg = [err_callback, arg](int error) {
+      err_callback(-error, arg);
+      return -nl_syserr2nlerr(error);
+    };
+
+    auto err_msg_cb = [](sockaddr_nl*, nlmsgerr* nlerr, void* arg) {
+      return (*static_cast<decltype(err_msg)*>(arg))(nlerr->error);
+    };
 
     nl_cb_set(cb, NL_CB_SEQ_CHECK, NL_CB_CUSTOM, noop_seq_check, NULL);
-    nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, recv_msg_cb, &args);
+    nl_cb_err(cb, NL_CB_CUSTOM, err_msg_cb, &err_msg);
+
+    if(opt_callback != std::nullopt) {
+      auto recv_msg = [opt_callback, arg](nl_msg *nlmsg) {
+        MessageParser msg(nlmsg);
+        return opt_callback.value()(msg, arg);
+      };
+
+      auto recv_msg_cb = [](nl_msg* nlmsg, void* arg) {
+        return (*static_cast<decltype(recv_msg)*>(arg))(nlmsg);
+      };
+
+      nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, recv_msg_cb, &recv_msg);
+    }
+
     int ret = nl_recvmsgs(m_nlsock.get(), cb);
     if(ret < 0)
       //TODO: better exception
