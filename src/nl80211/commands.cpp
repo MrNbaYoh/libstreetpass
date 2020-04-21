@@ -9,14 +9,9 @@ namespace nl80211::commands {
   void basic_err_handler(int error, void* arg) {
     if(error == 0)
       return;
-    std::promise<std::uint32_t> *prom = static_cast<std::promise<std::uint32_t>*>(arg);
-    prom->set_exception(
-      std::make_exception_ptr(
-        std::system_error(
+    throw std::system_error(
           std::error_code(error, std::generic_category())
-        )
-      )
-    );
+        );
   };
 
   void new_key(Socket& nlsock, std::uint32_t if_idx, std::uint8_t key_idx,
@@ -96,8 +91,8 @@ namespace nl80211::commands {
       throw "name too long";
 
     auto resp_handler = [](MessageParser& msg, void* arg) -> int {
-      std::promise<std::uint32_t> *prom = static_cast<std::promise<std::uint32_t>*>(arg);
-      prom->set_value(msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX));
+      std::uint32_t* id = static_cast<std::uint32_t*>(arg);
+      *id = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX);
       return NL_OK;
     };
 
@@ -107,11 +102,10 @@ namespace nl80211::commands {
     msg.put(NL80211_ATTR_IFNAME, name);
     nlsock.send_message(msg);
 
-    std::promise<std::uint32_t> prom;
-    std::future<std::uint32_t> fut = prom.get_future();
-    nlsock.recv_messages(resp_handler, basic_err_handler, &prom);
+    std::uint32_t id;
+    nlsock.recv_messages(resp_handler, basic_err_handler, &id);
 
-    return fut.get();
+    return id;
   }
 
   void del_interface(Socket& nlsock, std::uint32_t if_idx) {
