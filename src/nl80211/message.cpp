@@ -74,31 +74,31 @@ namespace nl80211 {
     return cmd;
   }
 
-  void MessageParser::get(nl80211_attrs attr, std::vector<std::uint8_t>& data) const {
-    int len = nla_len(m_tb_msg.at(attr));
+  void MessageParser::get(nlattr* attr, std::vector<std::uint8_t>& data) const {
+    int len = nla_len(attr);
 		std::uint8_t* d =
-      static_cast<std::uint8_t*>(nla_data(m_tb_msg.at(attr)));
+      static_cast<std::uint8_t*>(nla_data(attr));
     data.insert(data.end(), d, d + len);
   }
 
-  void MessageParser::get(nl80211_attrs attr, std::string& str) const {
-		char* s = nla_get_string(m_tb_msg.at(attr));
+  void MessageParser::get(nlattr* attr, std::string& str) const {
+		char* s = nla_get_string(attr);
     str.insert(str.size(), s);
   }
 
-  void MessageParser::get(nl80211_attrs attr, std::uint32_t& w) const {
-    w = nla_get_u32(m_tb_msg.at(attr));
+  void MessageParser::get(nlattr* attr, std::uint32_t& w) const {
+    w = nla_get_u32(attr);
   }
 
-  void MessageParser::get(nl80211_attrs attr, std::uint16_t& w) const {
-    w = nla_get_u16(m_tb_msg.at(attr));
+  void MessageParser::get(nlattr* attr, std::uint16_t& w) const {
+    w = nla_get_u16(attr);
   }
 
-  void MessageParser::get(nl80211_attrs attr, std::uint8_t& w) const {
-    w = nla_get_u8(m_tb_msg.at(attr));
+  void MessageParser::get(nlattr* attr, std::uint8_t& w) const {
+    w = nla_get_u8(attr);
   }
 
-  void MessageParser::get(nl80211_attrs attr, bool& b) const {
-    b = nla_get_flag(m_tb_msg.at(attr));
+  void MessageParser::get(nlattr* attr, bool& b) const {
+    b = nla_get_flag(attr);
   }
 }

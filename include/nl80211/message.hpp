@@ -34,12 +34,12 @@ namespace nl80211 {
     std::array<nlattr*, NL80211_ATTR_MAX + 1> m_tb_msg;
     std::uint8_t cmd;
 
-    void get(nl80211_attrs attr, std::uint32_t& w) const;
-    void get(nl80211_attrs attr, std::uint16_t& w) const;
-    void get(nl80211_attrs attr, std::uint8_t& w) const;
-    void get(nl80211_attrs attr, std::vector<std::uint8_t>& data) const;
-    void get(nl80211_attrs attr, std::string& str) const;
-    void get(nl80211_attrs attr, bool& b) const;
+    void get(nlattr* attr, std::uint32_t& w) const;
+    void get(nlattr* attr, std::uint16_t& w) const;
+    void get(nlattr* attr, std::uint8_t& w) const;
+    void get(nlattr* attr, std::vector<std::uint8_t>& data) const;
+    void get(nlattr* attr, std::string& str) const;
+    void get(nlattr* attr, bool& b) const;
   public:
     MessageParser(nl_msg* nlmsg);
 
@@ -57,8 +57,27 @@ namespace nl80211 {
         throw "invalid attr";
 
       T t;
-      get(attr, t);
+      get(m_tb_msg.at(attr), t);
       return t;
+    }
+
+    template<typename T>
+    std::vector<T> get_nested(nl80211_attrs attr) const {
+      if(m_tb_msg.at(attr) == nullptr)
+        //TODO: better exception
+        throw "invalid attr";
+
+      int rem;
+      nlattr* nl_attr;
+      std::vector<T> res;
+      nla_for_each_nested(nl_attr, m_tb_msg.at(attr), rem)
+      {
+        T t;
+        get<T>(nl_attr, t);
+        res.push_back(t);
+      }
+
+      return res;
     }
   };
 }
