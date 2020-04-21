@@ -73,7 +73,7 @@ namespace nl80211 {
       nla_for_each_nested(nl_attr, m_tb_msg.at(attr), rem)
       {
         T t;
-        get<T>(nl_attr, t);
+        get(nl_attr, t);
         res.push_back(t);
       }
 
