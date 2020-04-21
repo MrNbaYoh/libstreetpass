@@ -51,10 +51,7 @@ namespace nl80211::commands {
     nlsock.recv_messages();
   }
 
-  void register_frame(Socket& nlsock, std::uint32_t if_idx, std::uint16_t type)
-  {
-    register_frame(nlsock, if_idx, type, std::vector<std::uint8_t>());
-  }
+
 
   void join_ibss(Socket& nlsock, std::uint32_t if_idx, std::string const& ssid,
     std::uint32_t freq, bool fixed_freq, std::array<std::uint8_t, 6> const& bssid)
