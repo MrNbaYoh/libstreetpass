@@ -40,7 +40,7 @@ namespace nl80211 {
       throw "nl_recvmsgs_default";
   }
 
-  void Socket::recv_messages(std::optional<std::function<int(MessageParser&, void*)>> opt_callback, std::function<void(int, void*)> err_callback, void* arg) {
+  void Socket::recv_messages(std::function<int(MessageParser&, void*)> callback, void* arg) {
     nl_cb* cb = nl_cb_alloc(NL_CB_DEFAULT);
     if(cb == nullptr)
       //TODO: better exception
@@ -50,30 +50,18 @@ namespace nl80211 {
       return NL_OK;
     };
 
-    auto err_msg = [err_callback, arg](int error) {
-      err_callback(-error, arg);
-      return -nl_syserr2nlerr(error);
-    };
-
-    auto err_msg_cb = [](sockaddr_nl*, nlmsgerr* nlerr, void* arg) {
-      return (*static_cast<decltype(err_msg)*>(arg))(nlerr->error);
-    };
-
     nl_cb_set(cb, NL_CB_SEQ_CHECK, NL_CB_CUSTOM, noop_seq_check, NULL);
-    nl_cb_err(cb, NL_CB_CUSTOM, err_msg_cb, &err_msg);
 
-    if(opt_callback != std::nullopt) {
-      auto recv_msg = [opt_callback, arg](nl_msg *nlmsg) {
-        MessageParser msg(nlmsg);
-        return opt_callback.value()(msg, arg);
-      };
+    auto recv_msg = [callback, arg](nl_msg *nlmsg) {
+      MessageParser msg(nlmsg);
+      return callback(msg, arg);
+    };
 
-      auto recv_msg_cb = [](nl_msg* nlmsg, void* arg) {
-        return (*static_cast<decltype(recv_msg)*>(arg))(nlmsg);
-      };
+    auto recv_msg_cb = [](nl_msg* nlmsg, void* arg) {
+      return (*static_cast<decltype(recv_msg)*>(arg))(nlmsg);
+    };
 
       nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, recv_msg_cb, &recv_msg);
-    }
 
     int ret = nl_recvmsgs(m_nlsock.get(), cb);
     if(ret < 0)

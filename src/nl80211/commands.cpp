@@ -6,14 +6,6 @@
 
 namespace nl80211::commands {
 
-  void basic_err_handler(int error, void* arg) {
-    if(error == 0)
-      return;
-    throw std::system_error(
-          std::error_code(error, std::generic_category())
-        );
-  };
-
   void new_key(Socket& nlsock, std::uint32_t if_idx, std::uint8_t key_idx,
     std::uint32_t cipher, std::array<std::uint8_t, 6> const& mac,
     std::vector<std::uint8_t> const& key)
@@ -103,7 +95,7 @@ namespace nl80211::commands {
     nlsock.send_message(msg);
 
     std::uint32_t id;
-    nlsock.recv_messages(resp_handler, basic_err_handler, &id);
+    nlsock.recv_messages(resp_handler, &id);
 
     return id;
   }
