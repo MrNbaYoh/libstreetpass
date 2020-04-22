@@ -81,8 +81,7 @@ namespace nl80211 {
   public:
     MessageAttribute(nlattr* attr) {
       if(attr == nullptr)
-        //TODO: better exception
-        throw "invalid attr == nullptr";
+        throw std::invalid_argument("Attribute is null");
 
       m_type = nla_type(attr);
       m_len = nla_len(attr);
@@ -120,8 +119,7 @@ namespace nl80211 {
     template<typename T>
     MessageAttribute<T> get(nl80211_attrs attr) const {
       if(m_tb_msg.at(attr) == nullptr)
-        //TODO: better exception
-        throw "invalid attr";
+        throw std::invalid_argument("Attribute is null");
 
       return MessageAttribute<T>(m_tb_msg.at(attr));
     }
