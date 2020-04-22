@@ -26,13 +26,27 @@ namespace nl80211 {
   }
 
   void Socket::send_message(Message& msg) {
-    int ret = nl_send_auto(m_nlsock.get(), msg.m_nl_msg.get());
+    int ret;
+    try {
+      ret = nl_send_auto(m_nlsock.get(), msg.m_nl_msg.get());
+    } catch(...) {
+      std::cerr << "Caught an exception while sending netlink messages! "
+      "Memory leak in sight... aborting." << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
   	if(ret < 0)
       throw NlError(ret, "Failed to send message");
   }
 
   void Socket::recv_messages() {
-    int ret = nl_recvmsgs_default(m_nlsock.get());
+    int ret;
+    try {
+      ret = nl_recvmsgs_default(m_nlsock.get());
+    } catch(...) {
+      std::cerr << "Caught an exception while receiving netlink messages! "
+      "Memory leak in sight... aborting." << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
     if(ret < 0)
       throw NlError(ret, "An error occured while receiving messages");
   }
@@ -59,7 +73,14 @@ namespace nl80211 {
 
     nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, recv_msg_cb, &recv_msg);
 
-    int ret = nl_recvmsgs(m_nlsock.get(), cb);
+    int ret;
+    try {
+      ret = nl_recvmsgs(m_nlsock.get(), cb);
+    } catch(...) {
+      std::cerr << "Caught an exception while receiving netlink messages! "
+      "Memory leak in sight... aborting." << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
     if(ret < 0)
       throw NlError(ret, "An error occured while receiving messages");
 
