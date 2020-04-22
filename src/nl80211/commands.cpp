@@ -6,6 +6,11 @@
 
 namespace nl80211::commands {
 
+  struct command_arg {
+    std::exception_ptr e;
+    void* arg;
+  };
+
   void new_key(Socket& nlsock, std::uint32_t if_idx, std::uint8_t key_idx,
     std::uint32_t cipher, std::array<std::uint8_t, 6> const& mac,
     std::vector<std::uint8_t> const& key)
@@ -57,8 +62,7 @@ namespace nl80211::commands {
     std::uint32_t freq, bool fixed_freq, std::array<std::uint8_t, 6> const& bssid)
   {
     if(ssid.size() > 0x20)
-      //TODO: better exception
-      throw "ssid too long";
+      throw std::invalid_argument("SSID is too long");
 
     Message msg(NL80211_CMD_JOIN_IBSS, nlsock.get_driver_id());
     msg.put(NL80211_ATTR_IFINDEX, if_idx);
@@ -76,12 +80,18 @@ namespace nl80211::commands {
     std::string const& name)
   {
     if(name.size() > IFNAMSIZ - 1)
-      //TODO: better exception
-      throw "name too long";
+      throw std::invalid_argument("Interface name is too long");
 
     auto resp_handler = [](MessageParser& msg, void* arg) -> int {
-      std::uint32_t* id = static_cast<std::uint32_t*>(arg);
-      *id = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
+      auto cmd_arg = static_cast<struct command_arg*>(arg);
+      std::uint32_t* id = static_cast<std::uint32_t*>(cmd_arg->arg);
+
+      try {
+        *id = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
+      } catch(...) {
+        cmd_arg->e = std::current_exception();
+      }
+
       return NL_OK;
     };
 
@@ -92,7 +102,12 @@ namespace nl80211::commands {
     nlsock.send_message(msg);
 
     std::uint32_t id;
-    nlsock.recv_messages(resp_handler, &id);
+    struct command_arg args = {};
+    args.arg = &id;
+    nlsock.recv_messages(resp_handler, &args);
+
+    if(args.e)
+      std::rethrow_exception(args.e);
 
     return id;
   }
@@ -106,18 +121,23 @@ namespace nl80211::commands {
   }
 
   int parse_wiphy_message(MessageParser& msg, void* arg) {
-    auto w = static_cast<struct wiphy*>(arg);
+    auto cmd_arg = static_cast<struct command_arg*>(arg);
+    auto w = static_cast<struct wiphy*>(cmd_arg->arg);
 
-    w->index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
-    w->name = msg.get<std::string>(NL80211_ATTR_WIPHY_NAME).value();
+    try {
+      w->index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
+      w->name = msg.get<std::string>(NL80211_ATTR_WIPHY_NAME).value();
 
-    auto cmd_attrs = msg.get<std::vector<MessageAttribute<std::uint32_t>>>(NL80211_ATTR_SUPPORTED_COMMANDS).value();
-    for(auto attr: cmd_attrs)
-      w->supported_cmds.push_back(attr.value());
+      auto cmd_attrs = msg.get<std::vector<MessageAttribute<std::uint32_t>>>(NL80211_ATTR_SUPPORTED_COMMANDS).value();
+      for(auto attr: cmd_attrs)
+        w->supported_cmds.push_back(attr.value());
 
-    auto iftype_attrs = msg.get<std::vector<MessageAttribute<void>>>(NL80211_ATTR_SUPPORTED_IFTYPES).value();
-    for(auto attr: iftype_attrs)
-      w->supported_iftypes.push_back(attr.type());
+      auto iftype_attrs = msg.get<std::vector<MessageAttribute<void>>>(NL80211_ATTR_SUPPORTED_IFTYPES).value();
+      for(auto attr: iftype_attrs)
+        w->supported_iftypes.push_back(attr.type());
+    } catch(...) {
+      cmd_arg->e = std::current_exception();
+    }
 
     return NL_OK;
   };
@@ -129,22 +149,38 @@ namespace nl80211::commands {
     nlsock.send_message(msg);
 
     struct wiphy w = {};
-    nlsock.recv_messages(parse_wiphy_message, &w);
+    struct command_arg args = {};
+    args.arg = &w;
+    nlsock.recv_messages(parse_wiphy_message, &args);
+
+    if(args.e)
+      std::rethrow_exception(args.e);
 
     return w;
   }
 
   std::vector<wiphy> get_wiphy_list(Socket& nlsock) {
     auto resp_handler = [](MessageParser& msg, void* arg) -> int {
-      auto v = static_cast<std::vector<struct wiphy>*>(arg);
+      auto cmd_arg = static_cast<struct command_arg*>(arg);
+      auto v = static_cast<std::vector<struct wiphy>*>(cmd_arg->arg);
 
-      auto index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();;
-      if(!v->empty() && v->back().index == index)
-        return NL_OK;
+      try {
+        auto index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();;
+        //if(!v->empty() && v->back().index == index)
+        //  return NL_OK;
 
-      struct wiphy w;
-      parse_wiphy_message(msg, &w);
-      v->push_back(w);
+        struct wiphy w;
+        struct command_arg args = {};
+        args.arg = &w;
+        parse_wiphy_message(msg, &args);
+        if(args.e)
+          std::rethrow_exception(args.e);
+
+        v->push_back(w);
+      } catch(...) {
+        cmd_arg->e = std::current_exception();
+      }
+
       return NL_OK;
     };
     Message msg(NL80211_CMD_GET_WIPHY, nlsock.get_driver_id(), NLM_F_DUMP);
@@ -152,25 +188,36 @@ namespace nl80211::commands {
     nlsock.send_message(msg);
 
     std::vector<struct wiphy> v;
-    nlsock.recv_messages(resp_handler, &v);
+    struct command_arg args = {};
+    args.arg = &v;
+    nlsock.recv_messages(resp_handler, &args);
+
+    if(args.e)
+      std::rethrow_exception(args.e);
 
     return v;
   }
 
   std::vector<wiface> get_interface_list(Socket& nlsock, std::uint32_t wiphy) {
     auto resp_handler = [](MessageParser& msg, void* arg) -> int {
-      auto v = static_cast<std::vector<struct wiface>*>(arg);
+      auto cmd_arg = static_cast<struct command_arg*>(arg);
+      auto v = static_cast<std::vector<struct wiface>*>(cmd_arg->arg);
 
-      auto index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
-      if(!v->empty() && v->back().index == index)
-        return NL_OK;
+      try {
+        auto index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
+        if(!v->empty() && v->back().index == index)
+          return NL_OK;
 
-      struct wiface i;
-      i.index = index;
-      i.wiphy = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
-      i.name = msg.get<std::string>(NL80211_ATTR_IFNAME).value();
-      i.type = msg.get<std::uint32_t>(NL80211_ATTR_IFTYPE).value();
-      v->push_back(i);
+        struct wiface i;
+        i.index = index;
+        i.wiphy = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
+        i.name = msg.get<std::string>(NL80211_ATTR_IFNAME).value();
+        i.type = msg.get<std::uint32_t>(NL80211_ATTR_IFTYPE).value();
+        v->push_back(i);
+      } catch(...) {
+        cmd_arg->e = std::current_exception();
+      }
+
       return NL_OK;
     };
     Message msg(NL80211_CMD_GET_INTERFACE, nlsock.get_driver_id(), NLM_F_DUMP);
@@ -179,7 +226,12 @@ namespace nl80211::commands {
     nlsock.send_message(msg);
 
     std::vector<struct wiface> v;
-    nlsock.recv_messages(resp_handler, &v);
+    struct command_arg args = {};
+    args.arg = &v;
+    nlsock.recv_messages(resp_handler, &args);
+
+    if(args.e)
+      std::rethrow_exception(args.e);
 
     return v;
   }
