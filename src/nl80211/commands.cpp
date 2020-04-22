@@ -156,4 +156,31 @@ namespace nl80211::commands {
 
     return v;
   }
+
+  std::vector<wiface> get_interface_list(Socket& nlsock, std::uint32_t wiphy) {
+    auto resp_handler = [](MessageParser& msg, void* arg) -> int {
+      auto v = static_cast<std::vector<struct wiface>*>(arg);
+
+      auto index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
+      if(!v->empty() && v->back().index == index)
+        return NL_OK;
+
+      struct wiface i;
+      i.index = index;
+      i.wiphy = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
+      i.name = msg.get<std::string>(NL80211_ATTR_IFNAME).value();
+      i.type = msg.get<std::uint32_t>(NL80211_ATTR_IFTYPE).value();
+      v->push_back(i);
+      return NL_OK;
+    };
+    Message msg(NL80211_CMD_GET_INTERFACE, nlsock.get_driver_id(), NLM_F_DUMP);
+    msg.put(NL80211_ATTR_WIPHY, wiphy);
+
+    nlsock.send_message(msg);
+
+    std::vector<struct wiface> v;
+    nlsock.recv_messages(resp_handler, &v);
+
+    return v;
+  }
 }

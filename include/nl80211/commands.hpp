@@ -36,4 +36,12 @@ namespace nl80211::commands {
   };
   wiphy get_wiphy(Socket& nlsock, std::uint32_t wiphy);
   std::vector<wiphy> get_wiphy_list(Socket& nlsock);
+
+  struct wiface {
+    std::uint32_t wiphy;
+    std::uint32_t index;
+    std::uint32_t type;
+    std::string name;
+  };
+  std::vector<wiface> get_interface_list(Socket& nlsock, std::uint32_t wiphy);
 }
