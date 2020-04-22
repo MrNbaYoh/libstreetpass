@@ -8,6 +8,7 @@ add_library(streetpass::nl80211 ALIAS StreetpassNl80211)
 target_sources(StreetpassNl80211
     PRIVATE
         commands.cpp
+        error.cpp
         message.cpp
         socket.cpp
     )
