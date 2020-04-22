@@ -44,13 +44,13 @@ namespace nl80211 {
       throw "nla_put";
   }
 
-  Message::Message(nl80211_commands cmd, int driver_id) :
+  Message::Message(nl80211_commands cmd, int driver_id, int flags) :
     m_nl_msg(nlmsg_alloc(), nlmsg_free)
   {
     if(m_nl_msg.get() == nullptr)
       throw std::bad_alloc();
 
-    void* p_res = genlmsg_put(m_nl_msg.get(), 0, 0, driver_id, 0, 0, cmd, 0);
+    void* p_res = genlmsg_put(m_nl_msg.get(), 0, 0, driver_id, 0, flags, cmd, 0);
     if(p_res == nullptr)
       //TODO: better exception
       throw "genlmsg_put";
@@ -74,31 +74,55 @@ namespace nl80211 {
     return cmd;
   }
 
-  void MessageParser::get(nlattr* attr, std::vector<std::uint8_t>& data) const {
-    int len = nla_len(attr);
-		std::uint8_t* d =
-      static_cast<std::uint8_t*>(nla_data(attr));
-    data.insert(data.end(), d, d + len);
+  template<typename T>
+  MessageAttribute<T>::MessageAttribute(nlattr* attr) {
+    if(attr == nullptr)
+      //TODO: better exception
+      throw "invalid attr == nullptr";
+
+    m_type = nla_type(attr);
+    m_len = nla_len(attr);
+
+    load_content(attr);
   }
 
-  void MessageParser::get(nlattr* attr, std::string& str) const {
-		char* s = nla_get_string(attr);
-    str.insert(str.size(), s);
+  MessageAttribute<void>::MessageAttribute(nlattr* attr) {
+    if(attr == nullptr)
+      //TODO: better exception
+      throw "invalid attr == nullptr";
+
+    m_type = nla_type(attr);
+    m_len = nla_len(attr);
+
+    if(m_len > 0)
+      //TODO: better exception
+      throw "attr len is > 0";
   }
 
-  void MessageParser::get(nlattr* attr, std::uint32_t& w) const {
-    w = nla_get_u32(attr);
+  template<typename T>
+  void MessageAttribute<T>::load_content(nlattr* attr) {
+    T* data = static_cast<T*>(nla_data(attr));
+    if(m_len < sizeof(T))
+      //TODO: better exception
+      throw "attr len is < type len";
+
+    m_content = *data;
   }
 
-  void MessageParser::get(nlattr* attr, std::uint16_t& w) const {
-    w = nla_get_u16(attr);
+  template<>
+  void MessageAttribute<std::string>::load_content(nlattr* attr) {
+    char* data = nla_get_string(attr);
+    m_content = std::string(data, m_len);
   }
 
-  void MessageParser::get(nlattr* attr, std::uint8_t& w) const {
-    w = nla_get_u8(attr);
+  template<>
+  void MessageAttribute<std::vector<std::uint8_t>>::load_content(nlattr* attr) {
+    std::uint32_t* data = static_cast<std::uint32_t*>(nla_data(attr));
+    m_content = std::vector<std::uint8_t>(data, data + m_len);
   }
 
-  void MessageParser::get(nlattr* attr, bool& b) const {
-    b = nla_get_flag(attr);
+  template<>
+  void MessageAttribute<bool>::load_content(nlattr* attr) {
+    m_content = nla_get_flag(attr);
   }
 }

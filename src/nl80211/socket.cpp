@@ -61,7 +61,7 @@ namespace nl80211 {
       return (*static_cast<decltype(recv_msg)*>(arg))(nlmsg);
     };
 
-      nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, recv_msg_cb, &recv_msg);
+    nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, recv_msg_cb, &recv_msg);
 
     int ret = nl_recvmsgs(m_nlsock.get(), cb);
     if(ret < 0)

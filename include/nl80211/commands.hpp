@@ -27,4 +27,13 @@ namespace nl80211::commands {
     std::string const& name);
 
   void del_interface(Socket& nlsock, std::uint32_t if_idx);
+
+  struct wiphy {
+    std::uint32_t index;
+    std::string name;
+    std::vector<std::uint32_t> supported_cmds;
+    std::vector<std::uint32_t> supported_iftypes;
+  };
+  wiphy get_wiphy(Socket& nlsock, std::uint32_t wiphy);
+  std::vector<wiphy> get_wiphy_list(Socket& nlsock);
 }

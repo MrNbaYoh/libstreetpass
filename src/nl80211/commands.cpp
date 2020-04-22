@@ -81,7 +81,7 @@ namespace nl80211::commands {
 
     auto resp_handler = [](MessageParser& msg, void* arg) -> int {
       std::uint32_t* id = static_cast<std::uint32_t*>(arg);
-      *id = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX);
+      *id = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
       return NL_OK;
     };
 
@@ -103,5 +103,57 @@ namespace nl80211::commands {
 
     nlsock.send_message(msg);
     nlsock.recv_messages();
+  }
+
+  int parse_wiphy_message(MessageParser& msg, void* arg) {
+    auto w = static_cast<struct wiphy*>(arg);
+
+    w->index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
+    w->name = msg.get<std::string>(NL80211_ATTR_WIPHY_NAME).value();
+
+    auto cmd_attrs = msg.get<std::vector<MessageAttribute<std::uint32_t>>>(NL80211_ATTR_SUPPORTED_COMMANDS).value();
+    for(auto attr: cmd_attrs)
+      w->supported_cmds.push_back(attr.value());
+
+    auto iftype_attrs = msg.get<std::vector<MessageAttribute<void>>>(NL80211_ATTR_SUPPORTED_IFTYPES).value();
+    for(auto attr: iftype_attrs)
+      w->supported_iftypes.push_back(attr.type());
+
+    return NL_OK;
+  };
+
+  wiphy get_wiphy(Socket& nlsock, std::uint32_t wiphy) {
+    Message msg(NL80211_CMD_GET_WIPHY, nlsock.get_driver_id());
+    msg.put(NL80211_ATTR_WIPHY, wiphy);
+
+    nlsock.send_message(msg);
+
+    struct wiphy w = {};
+    nlsock.recv_messages(parse_wiphy_message, &w);
+
+    return w;
+  }
+
+  std::vector<wiphy> get_wiphy_list(Socket& nlsock) {
+    auto resp_handler = [](MessageParser& msg, void* arg) -> int {
+      auto v = static_cast<std::vector<struct wiphy>*>(arg);
+
+      auto index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();;
+      if(!v->empty() && v->back().index == index)
+        return NL_OK;
+
+      struct wiphy w;
+      parse_wiphy_message(msg, &w);
+      v->push_back(w);
+      return NL_OK;
+    };
+    Message msg(NL80211_CMD_GET_WIPHY, nlsock.get_driver_id(), NLM_F_DUMP);
+
+    nlsock.send_message(msg);
+
+    std::vector<struct wiphy> v;
+    nlsock.recv_messages(resp_handler, &v);
+
+    return v;
   }
 }

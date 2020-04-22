@@ -7,6 +7,7 @@
 #include <linux/nl80211.h>
 
 #include "nl80211/socket.hpp"
+#include <iostream>
 
 namespace nl80211 {
   class Message {
@@ -14,7 +15,7 @@ namespace nl80211 {
     std::unique_ptr<nl_msg, decltype(&nlmsg_free)> m_nl_msg;
     friend void Socket::send_message(Message&);
   public:
-    Message(nl80211_commands cmd, int driver_id);
+    Message(nl80211_commands cmd, int driver_id, int flags = 0);
 
     Message(const Message&) = delete;
     Message& operator=(const Message&) = delete;
@@ -29,17 +30,83 @@ namespace nl80211 {
     void put(nl80211_attrs attr, std::string const& s);
   };
 
+  template<typename T>
+  class MessageAttribute {
+  private:
+    std::uint16_t m_len;
+    std::uint16_t m_type;
+    T m_content;
+
+    void load_content(nlattr* attr);
+  public:
+    MessageAttribute(nlattr* attr);
+
+    inline std::uint16_t type() const {
+      return m_type;
+    }
+
+    inline T value() const {
+      return m_content;
+    }
+  };
+
+  template class MessageAttribute<bool>;
+  template class MessageAttribute<std::uint8_t>;
+  template class MessageAttribute<std::uint16_t>;
+  template class MessageAttribute<std::uint32_t>;
+  template class MessageAttribute<std::string>;
+  template class MessageAttribute<std::vector<std::uint8_t>>;
+
+  template <>
+  class MessageAttribute<void> {
+  private:
+    std::uint16_t m_len;
+    std::uint16_t m_type;
+  public:
+    MessageAttribute(nlattr* attr);
+
+    inline std::uint16_t type() const {
+      return m_type;
+    }
+  };
+
+  template<typename T>
+  class MessageAttribute<std::vector<MessageAttribute<T>>> {
+  private:
+
+    std::uint16_t m_len;
+    std::uint16_t m_type;
+    std::vector<MessageAttribute<T>> m_content;
+
+  public:
+    MessageAttribute(nlattr* attr) {
+      if(attr == nullptr)
+        //TODO: better exception
+        throw "invalid attr == nullptr";
+
+      m_type = nla_type(attr);
+      m_len = nla_len(attr);
+
+      int rem;
+      nlattr* nested;
+      nla_for_each_nested(nested, attr, rem)
+        m_content.push_back(MessageAttribute<T>(nested));
+    }
+
+    inline std::uint16_t type() const {
+      return m_type;
+    }
+
+    inline std::vector<MessageAttribute<T>> value() const {
+      return m_content;
+    }
+  };
+
   class MessageParser {
   private:
     std::array<nlattr*, NL80211_ATTR_MAX + 1> m_tb_msg;
     std::uint8_t cmd;
 
-    void get(nlattr* attr, std::uint32_t& w) const;
-    void get(nlattr* attr, std::uint16_t& w) const;
-    void get(nlattr* attr, std::uint8_t& w) const;
-    void get(nlattr* attr, std::vector<std::uint8_t>& data) const;
-    void get(nlattr* attr, std::string& str) const;
-    void get(nlattr* attr, bool& b) const;
   public:
     MessageParser(nl_msg* nlmsg);
 
@@ -51,33 +118,12 @@ namespace nl80211 {
     std::uint8_t get_command() const;
 
     template<typename T>
-    T get(nl80211_attrs attr) const {
+    MessageAttribute<T> get(nl80211_attrs attr) const {
       if(m_tb_msg.at(attr) == nullptr)
         //TODO: better exception
         throw "invalid attr";
 
-      T t;
-      get(m_tb_msg.at(attr), t);
-      return t;
-    }
-
-    template<typename T>
-    std::vector<T> get_nested(nl80211_attrs attr) const {
-      if(m_tb_msg.at(attr) == nullptr)
-        //TODO: better exception
-        throw "invalid attr";
-
-      int rem;
-      nlattr* nl_attr;
-      std::vector<T> res;
-      nla_for_each_nested(nl_attr, m_tb_msg.at(attr), rem)
-      {
-        T t;
-        get(nl_attr, t);
-        res.push_back(t);
-      }
-
-      return res;
+      return MessageAttribute<T>(m_tb_msg.at(attr));
     }
   };
 }
