@@ -1,1 +1,62 @@
-build
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Miscellaneous system files
+.DS_Store
+*~
+._*
+.env
+Thumbs.db
+
+# Editor files
+.idea/
+.vs/
+.vscode/
+cmake-build-*/
+*.swp
+CMakeLists.txt.user
+CMakeLists.txt.user.*
+CMakeSettings.json
+
+# CMake helpers
+*CMakeFiles*/
+CMakeCache.txt
+*cmake_install.cmake*
+Makefile*
+
+# Build output directories
+[Bb]in/
+[Bb]uild/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
