@@ -1,0 +1,17 @@
+language: cpp
+
+dist: bionic
+
+compiler:
+  - gcc
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - libnl-3-dev
+      - libnl-genl-3-dev
+      - libcrypto++-dev
+
+script: cmake . -Bbuild && cmake --build build
