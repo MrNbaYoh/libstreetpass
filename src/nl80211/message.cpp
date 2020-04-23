@@ -1,7 +1,7 @@
 #include "nl80211/message.hpp"
 #include "nl80211/error.hpp"
 
-namespace nl80211 {
+namespace streetpass::nl80211 {
 
   void Message::put(nl80211_attrs attr, std::uint32_t v) {
     int res = nla_put_u32(m_nl_msg.get(), attr, v);

@@ -4,7 +4,7 @@
 #include <net/if.h>
 #include "nl80211/message.hpp"
 
-namespace nl80211::commands {
+namespace streetpass::nl80211::commands {
 
   struct command_arg {
     std::exception_ptr e;

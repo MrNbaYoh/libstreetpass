@@ -4,7 +4,7 @@
 #include <string>
 #include <cstdint>
 
-namespace crypto {
+namespace streetpass::crypto {
   void load_normal_key(std::string const& filepath);
   void load_normal_key(std::array<std::uint8_t, 16> const& key);
 

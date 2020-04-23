@@ -3,7 +3,7 @@
 
 #include "nl80211/error.hpp"
 
-namespace nl80211 {
+namespace streetpass::nl80211 {
 
   Socket::Socket() : m_nlsock(nl_socket_alloc(), nl_socket_free) {
     if(m_nlsock.get() == nullptr) {

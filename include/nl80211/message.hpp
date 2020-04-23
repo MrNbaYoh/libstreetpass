@@ -9,7 +9,7 @@
 #include "nl80211/socket.hpp"
 #include <iostream>
 
-namespace nl80211 {
+namespace streetpass::nl80211 {
   class Message {
   private:
     std::unique_ptr<nl_msg, decltype(&nlmsg_free)> m_nl_msg;

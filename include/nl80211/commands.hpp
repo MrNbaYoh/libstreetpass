@@ -5,7 +5,7 @@
 
 #include "nl80211/socket.hpp"
 
-namespace nl80211::commands {
+namespace streetpass::nl80211::commands {
 
   void new_key(Socket& nlsock, std::uint32_t if_idx, std::uint8_t key_idx,
     std::uint32_t cipher, std::array<std::uint8_t, 6> const& mac,

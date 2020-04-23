@@ -6,7 +6,7 @@
 #include <cstring>
 #include <system_error>
 
-namespace ifioctl {
+namespace streetpass::ifioctl {
   int socket() {
     int res = socket(PF_INET, SOCK_DGRAM, 0);
     if(res == -1)

@@ -9,7 +9,7 @@
 #include <cryptopp/hmac.h>
 #include <cryptopp/sha.h>
 
-namespace crypto {
+namespace streetpass::crypto {
   using namespace CryptoPP;
 
   SecByteBlock normal_key(0x00, AES::BLOCKSIZE);

@@ -8,7 +8,7 @@
 #include <netlink/genl/ctrl.h>
 #include <linux/nl80211.h>
 
-namespace nl80211 {
+namespace streetpass::nl80211 {
   class Message;
   class MessageParser;
 

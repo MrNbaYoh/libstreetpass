@@ -2,7 +2,7 @@
 
 #include <netlink/netlink.h>
 
-namespace nl80211 {
+namespace streetpass::nl80211 {
 
   NlError::NlError(int code, std::string msg) noexcept : m_code(code),
     m_msg(msg) {}

@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-namespace endianness {
+namespace streetpass::endianness {
 
   constexpr std::uint16_t to_le(std::uint16_t w) {
     if constexpr (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)

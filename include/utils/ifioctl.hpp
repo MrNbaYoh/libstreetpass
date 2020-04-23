@@ -4,7 +4,7 @@
 #include <string>
 #include <cstdint>
 
-namespace ifioctl {
+namespace streetpass::ifioctl {
   int socket();
   short get_interface_flags(int socket, std::string const& if_name);
   void set_interface_flags(int socket, std::string const& if_name, short flags);

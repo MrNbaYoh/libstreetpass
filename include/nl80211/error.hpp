@@ -2,7 +2,7 @@
 #include <exception>
 #include <string>
 
-namespace nl80211 {
+namespace streetpass::nl80211 {
   class NlError : std::exception {
   private:
     int m_code;
