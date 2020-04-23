@@ -20,4 +20,4 @@ target_include_directories(StreetpassNl80211
     )
 
 target_include_directories(StreetpassNl80211 PUBLIC ${LIBNL_INCLUDE_DIRS})
-target_link_libraries(StreetpassNl80211 PUBLIC ${LIBNL_LIBRARIES} streetpass::utils)
+target_link_libraries(StreetpassNl80211 PUBLIC ${LIBNL_LIBRARIES})

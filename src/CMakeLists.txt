@@ -18,6 +18,6 @@ target_sources(Streetpass
         main.cpp
     )
 
-target_link_libraries(Streetpass PRIVATE streetpass::nl80211)
+target_link_libraries(Streetpass PRIVATE streetpass::nl80211 streetpass::utils)
 
 target_clangformat_setup(Streetpass)
