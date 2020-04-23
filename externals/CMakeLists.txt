@@ -33,3 +33,11 @@ else()
     # Find libnl on the system.
     pkg_check_modules(LIBNL REQUIRED libnl-3.0 libnl-genl-3.0)
 endif()
+
+# libcrypto++
+if(NOT PkgConfig_FOUND)
+    message(FATAL_ERROR "pkg-config is required to find libcrypto++ on the system!")
+else()
+    # Find libnl on the system.
+    pkg_check_modules(LIBCRYPTOPP REQUIRED libcrypto++)
+endif()
