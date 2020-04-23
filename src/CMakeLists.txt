@@ -6,6 +6,7 @@ include(ClangFormat)
 
 add_subdirectory(utils)
 add_subdirectory(nl80211)
+add_subdirectory(crypto)
 
 ###################
 ## Build targets ##
@@ -18,6 +19,6 @@ target_sources(Streetpass
         main.cpp
     )
 
-target_link_libraries(Streetpass PRIVATE streetpass::nl80211 streetpass::utils)
+target_link_libraries(Streetpass PRIVATE streetpass::nl80211 streetpass::utils streetpass::crypto)
 
 target_clangformat_setup(Streetpass)
