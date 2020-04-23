@@ -36,10 +36,10 @@ namespace crypto {
   }
 
   std::array<std::uint8_t, 16> streetpass_ccmp_key(
-    std::array<std::uint8_t, 8> master_cid,
-    std::array<std::uint8_t, 6> master_mac,
-    std::array<std::uint8_t, 8> client_cid,
-    std::array<std::uint8_t, 6> client_mac)
+    std::array<std::uint8_t, 8> const& master_cid,
+    std::array<std::uint8_t, 6> const& master_mac,
+    std::array<std::uint8_t, 8> const& client_cid,
+    std::array<std::uint8_t, 6> const& client_mac)
   {
     std::vector<std::uint8_t> hash_block;
     hash_block.insert(hash_block.end(), master_cid.begin(), master_cid.end());

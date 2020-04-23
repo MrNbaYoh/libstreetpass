@@ -12,8 +12,8 @@ namespace crypto {
   void load_cecd_key(std::array<std::uint8_t, 17> const& key);
 
   std::array<std::uint8_t, 16> streetpass_ccmp_key(
-    std::array<std::uint8_t, 8> master_cid,
-    std::array<std::uint8_t, 6> master_mac,
-    std::array<std::uint8_t, 8> client_cid,
-    std::array<std::uint8_t, 6> client_mac);
+    std::array<std::uint8_t, 8> const& master_cid,
+    std::array<std::uint8_t, 6> const& master_mac,
+    std::array<std::uint8_t, 8> const& client_cid,
+    std::array<std::uint8_t, 6> const& client_mac);
 }
