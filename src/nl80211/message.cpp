@@ -102,7 +102,7 @@ namespace streetpass::nl80211 {
 
   template<>
   void MessageAttribute<std::vector<std::uint8_t>>::load_content(nlattr* attr) {
-    std::uint32_t* data = static_cast<std::uint32_t*>(nla_data(attr));
+    std::uint8_t* data = static_cast<std::uint8_t*>(nla_data(attr));
     m_content = std::vector<std::uint8_t>(data, data + m_len);
   }
 
