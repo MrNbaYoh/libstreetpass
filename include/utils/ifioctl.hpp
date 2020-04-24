@@ -5,10 +5,18 @@
 #include <cstdint>
 
 namespace streetpass::ifioctl {
-  int socket();
-  void set_interface_up(int socket, std::string const& if_name);
-  void set_interface_down(int socket, std::string const& if_name);
-  std::array<std::uint8_t, 6> get_interface_hwaddr(int socket, std::string const& if_name);
-  void set_interface_hwaddr(int socket, std::string const& if_name, std::array<std::uint8_t, 6> const& addr);
-  int get_interface_index(int socket, std::string const& if_name);
+  class Socket {
+  private:
+    int sock;
+  public:
+    Socket();
+    ~Socket();
+    int get_fd() const;
+  };
+
+  void set_interface_up(Socket const& socket, std::string const& if_name);
+  void set_interface_down(Socket const& socket, std::string const& if_name);
+  std::array<std::uint8_t, 6> get_interface_hwaddr(Socket const& socket, std::string const& if_name);
+  void set_interface_hwaddr(Socket const& socket, std::string const& if_name, std::array<std::uint8_t, 6> const& addr);
+  int get_interface_index(Socket const& socket, std::string const& if_name);
 }
