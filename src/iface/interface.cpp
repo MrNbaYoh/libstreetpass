@@ -8,11 +8,13 @@ namespace streetpass::iface {
   Virtual::Virtual(nl80211::wiface wiface) : m_wiface(wiface) {}
 
   void Virtual::up() const {
+    //TODO: exception handling?
     ifioctl::Socket sock;
     ifioctl::set_interface_up(sock, m_wiface.name);
   }
 
   void Virtual::down() const {
+    //TODO: exception handling?
     ifioctl::Socket sock;
     ifioctl::set_interface_down(sock, m_wiface.name);
   }
@@ -20,6 +22,10 @@ namespace streetpass::iface {
   Physical::Physical(nl80211::wiphy wiphy) : m_wiphy(wiphy) {}
 
   Virtual Physical::setup_streetpass_interface() const {
+    check_supported();
+    auto virt_list = find_all_virtual();
+    for(auto virt: virt_list)
+      virt.down();
     //TODO: implement!
   }
 
@@ -51,10 +57,6 @@ namespace streetpass::iface {
     if(cmd_it == cmds.end())
       throw UnsupportedPhysicalInterface("Interface does not support joining IBSS");
 
-    cmd_it = std::find(cmds.begin(), cmds.end(), NL80211_CMD_REGISTER_FRAME);
-    if(cmd_it == cmds.end())
-      throw UnsupportedPhysicalInterface("Interface does not support registering custom callbacks for frames");
-
     cmd_it = std::find(cmds.begin(), cmds.end(), NL80211_CMD_FRAME);
     if(cmd_it == cmds.end())
       throw UnsupportedPhysicalInterface("Interface does not support sending custom frames");
@@ -85,7 +87,7 @@ namespace streetpass::iface {
   std::vector<Physical> Physical::find_all_supported() {
     std::vector<Physical> res = find_all();
     res.erase(std::remove_if(res.begin(), res.end(),
-      [](auto x) { return x.is_supported(); }));
+      [](auto x) { return !x.is_supported(); }), res.end());
 
     return res;
   }
