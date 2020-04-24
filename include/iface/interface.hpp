@@ -42,7 +42,7 @@ namespace streetpass::iface {
     std::vector<Virtual> find_all_virtual() const;
     bool is_supported() const noexcept;
     void check_supported() const;
-    Virtual setup_streetpass_interface() const;
+    Virtual setup_streetpass_interface(std::string const& name = "streetpass") const;
 
     static std::vector<Physical> find_all();
     static std::vector<Physical> find_all_supported();

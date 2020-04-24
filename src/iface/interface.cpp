@@ -2,6 +2,9 @@
 #include "utils/ifioctl.hpp"
 
 #include <algorithm>
+#include <iostream>
+#include <thread>
+#include <chrono>
 
 namespace streetpass::iface {
 
@@ -21,12 +24,24 @@ namespace streetpass::iface {
 
   Physical::Physical(nl80211::wiphy wiphy) : m_wiphy(wiphy) {}
 
-  Virtual Physical::setup_streetpass_interface() const {
+  Virtual Physical::setup_streetpass_interface(std::string const& name) const {
     check_supported();
     auto virt_list = find_all_virtual();
+    //TODO: exception handling
     for(auto virt: virt_list)
       virt.down();
+
+    //TODO: exception handling
+    nl80211::Socket nlsock;
+    Virtual virt = nl80211::commands::new_interface(nlsock, m_wiphy.index, NL80211_IFTYPE_ADHOC, name);
+    std::this_thread::sleep_for (std::chrono::seconds(1));
+    virt.down();
+    nl80211::commands::set_interface_mode(nlsock, virt.get_id(), NL80211_IFTYPE_ADHOC);
+    std::this_thread::sleep_for (std::chrono::seconds(1));
+    virt.up();
+    nl80211::commands::join_ibss(nlsock, virt.get_id(), "Nintendo_3DS_continuous_scan_000", 2412, true, virt.get_mac_addr());
     //TODO: implement!
+    return virt;
   }
 
   bool Physical::is_supported() const noexcept {

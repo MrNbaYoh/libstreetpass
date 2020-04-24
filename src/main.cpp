@@ -9,8 +9,8 @@ using namespace streetpass;
 int main(int argc, char** argv) {
   auto v = iface::Physical::find_all_supported();
   for(auto e: v)
-    for(auto i: e.find_all_virtual())
-      std::cout << i.get_name() << std::endl;
+    if(e.get_id() == 11)
+      e.setup_streetpass_interface();
 
   return 0;
 }
