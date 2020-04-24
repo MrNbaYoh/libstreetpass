@@ -49,7 +49,7 @@ namespace streetpass::iface {
   };
 
 
-  class UnsupportedPhysicalInterface : std::exception {
+  class UnsupportedPhysicalInterface : public std::exception {
   private:
     std::string m_msg;
   public:

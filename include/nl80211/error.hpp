@@ -3,7 +3,7 @@
 #include <string>
 
 namespace streetpass::nl80211 {
-  class NlError : std::exception {
+  class NlError : public std::exception {
   private:
     int m_code;
     std::string m_msg;
