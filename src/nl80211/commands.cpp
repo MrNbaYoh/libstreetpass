@@ -168,8 +168,8 @@ namespace streetpass::nl80211::commands {
 
       try {
         auto index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();;
-        //if(!v->empty() && v->back().index == index)
-        //  return NL_OK;
+        if(!v->empty() && v->back().index == index)
+          return NL_OK;
 
         struct wiphy w;
         struct command_arg args = {};
