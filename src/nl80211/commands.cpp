@@ -33,8 +33,26 @@ namespace streetpass::nl80211::commands {
       }
 
       return NL_OK;
-    };
+    }
 
+    int parse_interface_message(MessageParser& msg, void* arg) {
+      auto cmd_arg = static_cast<struct command_arg*>(arg);
+      auto w = static_cast<struct wiface*>(cmd_arg->arg);
+
+      try {
+        w->index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
+        w->wiphy = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
+        w->name = msg.get<std::string>(NL80211_ATTR_IFNAME).value();
+        w->type = msg.get<std::uint32_t>(NL80211_ATTR_IFTYPE).value();
+
+        auto mac = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_MAC).value();
+        std::copy_n(mac.begin(), 6, w->mac.begin());
+      } catch(...) {
+        cmd_arg->e = std::current_exception();
+      }
+
+      return NL_OK;
+    }
   }
 
   void new_key(Socket& nlsock, std::uint32_t if_idx, std::uint8_t key_idx,
@@ -90,7 +108,7 @@ namespace streetpass::nl80211::commands {
 
     Message msg(NL80211_CMD_JOIN_IBSS, nlsock.get_driver_id());
     msg.put(NL80211_ATTR_IFINDEX, if_idx);
-    msg.put(NL80211_ATTR_SSID, ssid);
+    msg.put(NL80211_ATTR_SSID, std::vector<std::uint8_t>(ssid.begin(), ssid.end()));
     msg.put(NL80211_ATTR_WIPHY_FREQ, freq);
     msg.put(NL80211_ATTR_MAC, std::vector<std::uint8_t>(bssid.begin(), bssid.end()));
     if(fixed_freq)
@@ -100,24 +118,11 @@ namespace streetpass::nl80211::commands {
     nlsock.recv_messages();
   }
 
-  std::uint32_t new_interface(Socket& nlsock, std::uint32_t wiphy, nl80211_iftype type,
+  wiface new_interface(Socket& nlsock, std::uint32_t wiphy, nl80211_iftype type,
     std::string const& name)
   {
     if(name.size() > IFNAMSIZ - 1)
       throw std::invalid_argument("Interface name is too long");
-
-    auto resp_handler = [](MessageParser& msg, void* arg) -> int {
-      auto cmd_arg = static_cast<struct command_arg*>(arg);
-      std::uint32_t* id = static_cast<std::uint32_t*>(cmd_arg->arg);
-
-      try {
-        *id = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
-      } catch(...) {
-        cmd_arg->e = std::current_exception();
-      }
-
-      return NL_OK;
-    };
 
     Message msg(NL80211_CMD_NEW_INTERFACE, nlsock.get_driver_id());
     msg.put(NL80211_ATTR_WIPHY, wiphy);
@@ -125,15 +130,15 @@ namespace streetpass::nl80211::commands {
     msg.put(NL80211_ATTR_IFNAME, name);
     nlsock.send_message(msg);
 
-    std::uint32_t id;
+    struct wiface w;
     struct command_arg args = {};
-    args.arg = &id;
-    nlsock.recv_messages(resp_handler, &args);
+    args.arg = &w;
+    nlsock.recv_messages(parse_interface_message, &args);
 
     if(args.e)
       std::rethrow_exception(args.e);
 
-    return id;
+    return w;
   }
 
   void del_interface(Socket& nlsock, std::uint32_t if_idx) {
@@ -211,13 +216,11 @@ namespace streetpass::nl80211::commands {
           return NL_OK;
 
         struct wiface i;
-        i.index = index;
-        i.wiphy = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
-        i.name = msg.get<std::string>(NL80211_ATTR_IFNAME).value();
-        i.type = msg.get<std::uint32_t>(NL80211_ATTR_IFTYPE).value();
-
-        auto mac = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_MAC).value();
-        std::copy_n(mac.begin(), 6, i.mac.begin());
+        struct command_arg args = {};
+        args.arg = &i;
+        parse_interface_message(msg, &args);
+        if(args.e)
+          std::rethrow_exception(args.e);
 
         v->push_back(i);
       } catch(...) {
