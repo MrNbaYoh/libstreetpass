@@ -14,42 +14,32 @@ namespace streetpass::nl80211::commands {
     };
 
     int parse_wiphy_message(MessageParser& msg, void* arg) {
-      auto cmd_arg = static_cast<struct command_arg*>(arg);
-      auto w = static_cast<struct wiphy*>(cmd_arg->arg);
+      auto w = static_cast<struct wiphy*>(arg);
 
-      try {
-        w->index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
-        w->name = msg.get<std::string>(NL80211_ATTR_WIPHY_NAME).value();
+      w->index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
+      w->name = msg.get<std::string>(NL80211_ATTR_WIPHY_NAME).value();
 
-        auto cmd_attrs = msg.get<std::vector<MessageAttribute<std::uint32_t>>>(NL80211_ATTR_SUPPORTED_COMMANDS).value();
-        for(auto attr: cmd_attrs)
-          w->supported_cmds.push_back(attr.value());
+      auto cmd_attrs = msg.get<std::vector<MessageAttribute<std::uint32_t>>>(NL80211_ATTR_SUPPORTED_COMMANDS).value();
+      for(auto attr: cmd_attrs)
+        w->supported_cmds.push_back(attr.value());
 
-        auto iftype_attrs = msg.get<std::vector<MessageAttribute<void>>>(NL80211_ATTR_SUPPORTED_IFTYPES).value();
-        for(auto attr: iftype_attrs)
-          w->supported_iftypes.push_back(attr.type());
-      } catch(...) {
-        cmd_arg->e = std::current_exception();
-      }
+      auto iftype_attrs = msg.get<std::vector<MessageAttribute<void>>>(NL80211_ATTR_SUPPORTED_IFTYPES).value();
+      for(auto attr: iftype_attrs)
+        w->supported_iftypes.push_back(attr.type());
 
       return NL_OK;
     }
 
     int parse_interface_message(MessageParser& msg, void* arg) {
-      auto cmd_arg = static_cast<struct command_arg*>(arg);
-      auto w = static_cast<struct wiface*>(cmd_arg->arg);
+      auto w = static_cast<struct wiface*>(arg);
 
-      try {
-        w->index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
-        w->wiphy = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
-        w->name = msg.get<std::string>(NL80211_ATTR_IFNAME).value();
-        w->type = msg.get<std::uint32_t>(NL80211_ATTR_IFTYPE).value();
+      w->index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
+      w->wiphy = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
+      w->name = msg.get<std::string>(NL80211_ATTR_IFNAME).value();
+      w->type = msg.get<std::uint32_t>(NL80211_ATTR_IFTYPE).value();
 
-        auto mac = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_MAC).value();
-        std::copy_n(mac.begin(), 6, w->mac.begin());
-      } catch(...) {
-        cmd_arg->e = std::current_exception();
-      }
+      auto mac = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_MAC).value();
+      std::copy_n(mac.begin(), 6, w->mac.begin());
 
       return NL_OK;
     }
@@ -131,12 +121,7 @@ namespace streetpass::nl80211::commands {
     nlsock.send_message(msg);
 
     struct wiface w;
-    struct command_arg args = {};
-    args.arg = &w;
-    nlsock.recv_messages(parse_interface_message, &args);
-
-    if(args.e)
-      std::rethrow_exception(args.e);
+    nlsock.recv_messages(parse_interface_message, &w);
 
     return w;
   }
@@ -156,12 +141,7 @@ namespace streetpass::nl80211::commands {
     nlsock.send_message(msg);
 
     struct wiphy w = {};
-    struct command_arg args = {};
-    args.arg = &w;
-    nlsock.recv_messages(parse_wiphy_message, &args);
-
-    if(args.e)
-      std::rethrow_exception(args.e);
+    nlsock.recv_messages(parse_wiphy_message, &w);
 
     return w;
   }
@@ -171,22 +151,14 @@ namespace streetpass::nl80211::commands {
       auto cmd_arg = static_cast<struct command_arg*>(arg);
       auto v = static_cast<std::vector<struct wiphy>*>(cmd_arg->arg);
 
-      try {
-        auto index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();;
-        if(!v->empty() && v->back().index == index)
-          return NL_OK;
+      auto index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();;
+      if(!v->empty() && v->back().index == index)
+        return NL_OK;
 
-        struct wiphy w;
-        struct command_arg args = {};
-        args.arg = &w;
-        parse_wiphy_message(msg, &args);
-        if(args.e)
-          std::rethrow_exception(args.e);
+      struct wiphy w;
+      parse_wiphy_message(msg, &w);
 
-        v->push_back(w);
-      } catch(...) {
-        cmd_arg->e = std::current_exception();
-      }
+      v->push_back(w);
 
       return NL_OK;
     };
@@ -195,37 +167,22 @@ namespace streetpass::nl80211::commands {
     nlsock.send_message(msg);
 
     std::vector<struct wiphy> v;
-    struct command_arg args = {};
-    args.arg = &v;
-    nlsock.recv_messages(resp_handler, &args);
-
-    if(args.e)
-      std::rethrow_exception(args.e);
+    nlsock.recv_messages(resp_handler, &v);
 
     return v;
   }
 
   std::vector<wiface> get_interface_list(Socket& nlsock, std::uint32_t wiphy) {
     auto resp_handler = [](MessageParser& msg, void* arg) -> int {
-      auto cmd_arg = static_cast<struct command_arg*>(arg);
-      auto v = static_cast<std::vector<struct wiface>*>(cmd_arg->arg);
+      auto v = static_cast<std::vector<struct wiface>*>(arg);
 
-      try {
-        auto index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
-        if(!v->empty() && v->back().index == index)
-          return NL_OK;
+      auto index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
+      if(!v->empty() && v->back().index == index)
+        return NL_OK;
 
-        struct wiface i;
-        struct command_arg args = {};
-        args.arg = &i;
-        parse_interface_message(msg, &args);
-        if(args.e)
-          std::rethrow_exception(args.e);
-
-        v->push_back(i);
-      } catch(...) {
-        cmd_arg->e = std::current_exception();
-      }
+      struct wiface i;
+      parse_interface_message(msg, &i);
+      v->push_back(i);
 
       return NL_OK;
     };
@@ -235,12 +192,7 @@ namespace streetpass::nl80211::commands {
     nlsock.send_message(msg);
 
     std::vector<struct wiface> v;
-    struct command_arg args = {};
-    args.arg = &v;
-    nlsock.recv_messages(resp_handler, &args);
-
-    if(args.e)
-      std::rethrow_exception(args.e);
+    nlsock.recv_messages(resp_handler, &v);
 
     return v;
   }

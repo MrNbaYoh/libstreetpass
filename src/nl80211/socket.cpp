@@ -91,9 +91,17 @@ namespace streetpass::nl80211 {
     if(cb == nullptr)
       throw std::bad_alloc();
 
-    auto recv_msg_cb = [callback, arg](nl_msg *nlmsg) {
+    std::exception_ptr ex;
+
+    auto recv_msg_cb = [callback, arg, &ex](nl_msg *nlmsg) {
       MessageParser msg(nlmsg);
-      return callback(msg, arg);
+      int res;
+      try {
+        res = callback(msg, arg);
+      } catch(...) {
+        ex = std::current_exception();
+      }
+      return res;
     };
 
     auto valid_handler = [](nl_msg* nlmsg, void* arg) {
@@ -118,6 +126,8 @@ namespace streetpass::nl80211 {
     }
 
     nl_cb_put(cb);
+    if(ex)
+      std::rethrow_exception(ex);
     if(err < 0)
       throw NlError(err, "An error occured while receiving messages");
   }
