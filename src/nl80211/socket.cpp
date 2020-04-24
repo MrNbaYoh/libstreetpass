@@ -38,17 +38,52 @@ namespace streetpass::nl80211 {
       throw NlError(ret, "Failed to send message");
   }
 
+  namespace {
+    int finish_handler(nl_msg*, void *arg)
+    {
+    	int *ret = static_cast<int*>(arg);
+    	*ret = 0;
+    	return NL_SKIP;
+    }
+
+    int ack_handler(nl_msg*, void *arg)
+    {
+    	int *ret = static_cast<int*>(arg);
+    	*ret = 0;
+    	return NL_STOP;
+    }
+
+    int error_handler(sockaddr_nl*, nlmsgerr *err, void *arg)
+    {
+      int *ret = static_cast<int*>(arg);
+      *ret = -nl_syserr2nlerr(err->error);
+      return NL_STOP;
+    }
+  }
+
   void Socket::recv_messages() {
-    int ret;
+    nl_cb* cb = nl_cb_alloc(NL_CB_DEFAULT);
+    if(cb == nullptr)
+      throw std::bad_alloc();
+
+    int err = 1;
+
+    nl_cb_err(cb, NL_CB_CUSTOM, error_handler, &err);
+    nl_cb_set(cb, NL_CB_ACK, NL_CB_CUSTOM, ack_handler, &err);
+    nl_cb_set(cb, NL_CB_FINISH, NL_CB_CUSTOM, finish_handler, &err);
+
     try {
-      ret = nl_recvmsgs_default(m_nlsock.get());
+      while(err > 0)
+        nl_recvmsgs(m_nlsock.get(), cb);
     } catch(...) {
       std::cerr << "Caught an exception while receiving netlink messages! "
       "Memory leak in sight... aborting." << std::endl;
       std::exit(EXIT_FAILURE);
     }
-    if(ret < 0)
-      throw NlError(ret, "An error occured while receiving messages");
+
+    nl_cb_put(cb);
+    if(err < 0)
+      throw NlError(err, "An error occured while receiving messages");
   }
 
   void Socket::recv_messages(std::function<int(MessageParser&, void*)> callback, void* arg) {
@@ -56,34 +91,34 @@ namespace streetpass::nl80211 {
     if(cb == nullptr)
       throw std::bad_alloc();
 
-    auto noop_seq_check = [](nl_msg*, void*) -> int {
-      return NL_OK;
-    };
-
-    nl_cb_set(cb, NL_CB_SEQ_CHECK, NL_CB_CUSTOM, noop_seq_check, NULL);
-
-    auto recv_msg = [callback, arg](nl_msg *nlmsg) {
+    auto recv_msg_cb = [callback, arg](nl_msg *nlmsg) {
       MessageParser msg(nlmsg);
       return callback(msg, arg);
     };
 
-    auto recv_msg_cb = [](nl_msg* nlmsg, void* arg) {
-      return (*static_cast<decltype(recv_msg)*>(arg))(nlmsg);
+    auto valid_handler = [](nl_msg* nlmsg, void* arg) {
+      return (*static_cast<decltype(recv_msg_cb)*>(arg))(nlmsg);
     };
 
-    nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, recv_msg_cb, &recv_msg);
+    int err = 1;
 
-    int ret;
+    nl_cb_err(cb, NL_CB_CUSTOM, error_handler, &err);
+    nl_cb_set(cb, NL_CB_ACK, NL_CB_CUSTOM, ack_handler, &err);
+    nl_cb_set(cb, NL_CB_FINISH, NL_CB_CUSTOM, finish_handler, &err);
+
+    nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, valid_handler, &recv_msg_cb);
+
     try {
-      ret = nl_recvmsgs(m_nlsock.get(), cb);
+      while(err > 0)
+        nl_recvmsgs(m_nlsock.get(), cb);
     } catch(...) {
       std::cerr << "Caught an exception while receiving netlink messages! "
       "Memory leak in sight... aborting." << std::endl;
       std::exit(EXIT_FAILURE);
     }
-    if(ret < 0)
-      throw NlError(ret, "An error occured while receiving messages");
 
     nl_cb_put(cb);
+    if(err < 0)
+      throw NlError(err, "An error occured while receiving messages");
   }
 }
