@@ -7,32 +7,34 @@
 #include <system_error>
 
 namespace streetpass::ifioctl {
+  namespace {
+    short get_interface_flags(int socket, std::string const& if_name) {
+      struct ifreq ifr = {};
+
+    	if_name.copy(ifr.ifr_name, IFNAMSIZ - 1, 0);
+    	int ret = ioctl(socket, SIOCGIFFLAGS, &ifr);
+    	if(ret < 0)
+    		throw std::system_error(errno, std::generic_category());
+
+    	return ifr.ifr_flags;
+    }
+
+    void set_interface_flags(int socket, std::string const& if_name, short flags) {
+      struct ifreq ifr = {};
+
+    	ifr.ifr_flags = flags;
+    	if_name.copy(ifr.ifr_name, IFNAMSIZ - 1);
+    	int ret = ioctl(socket, SIOCSIFFLAGS, &ifr);
+    	if(ret < 0)
+    		throw std::system_error(errno, std::generic_category());
+    }
+  }
+
   int socket() {
     int res = socket(PF_INET, SOCK_DGRAM, 0);
     if(res == -1)
       throw std::system_error(errno, std::generic_category());
     return res;
-  }
-
-  short get_interface_flags(int socket, std::string const& if_name) {
-    struct ifreq ifr = {};
-
-  	if_name.copy(ifr.ifr_name, IFNAMSIZ - 1, 0);
-  	int ret = ioctl(socket, SIOCGIFFLAGS, &ifr);
-  	if(ret < 0)
-  		throw std::system_error(errno, std::generic_category());
-
-  	return ifr.ifr_flags;
-  }
-
-  void set_interface_flags(int socket, std::string const& if_name, short flags) {
-    struct ifreq ifr = {};
-
-  	ifr.ifr_flags = flags;
-  	if_name.copy(ifr.ifr_name, IFNAMSIZ - 1);
-  	int ret = ioctl(socket, SIOCSIFFLAGS, &ifr);
-  	if(ret < 0)
-  		throw std::system_error(errno, std::generic_category());
   }
 
   void set_interface_up(int socket, std::string const& if_name) {
