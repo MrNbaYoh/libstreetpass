@@ -34,7 +34,7 @@ namespace streetpass::nl80211::commands {
 
       return NL_OK;
     };
-    
+
   }
 
   void new_key(Socket& nlsock, std::uint32_t if_idx, std::uint8_t key_idx,
@@ -215,6 +215,10 @@ namespace streetpass::nl80211::commands {
         i.wiphy = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
         i.name = msg.get<std::string>(NL80211_ATTR_IFNAME).value();
         i.type = msg.get<std::uint32_t>(NL80211_ATTR_IFTYPE).value();
+
+        auto mac = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_MAC).value();
+        std::copy_n(mac.begin(), 6, i.mac.begin());
+
         v->push_back(i);
       } catch(...) {
         cmd_arg->e = std::current_exception();

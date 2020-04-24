@@ -12,6 +12,7 @@ namespace streetpass::nl80211 {
     std::uint32_t index;
     std::uint32_t type;
     std::string name;
+    std::array<std::uint8_t, 6> mac;
   };
 
   struct wiphy {
