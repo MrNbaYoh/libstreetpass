@@ -6,10 +6,36 @@
 
 namespace streetpass::nl80211::commands {
 
-  struct command_arg {
-    std::exception_ptr e;
-    void* arg;
-  };
+  namespace {
+
+    struct command_arg {
+      std::exception_ptr e;
+      void* arg;
+    };
+
+    int parse_wiphy_message(MessageParser& msg, void* arg) {
+      auto cmd_arg = static_cast<struct command_arg*>(arg);
+      auto w = static_cast<struct wiphy*>(cmd_arg->arg);
+
+      try {
+        w->index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
+        w->name = msg.get<std::string>(NL80211_ATTR_WIPHY_NAME).value();
+
+        auto cmd_attrs = msg.get<std::vector<MessageAttribute<std::uint32_t>>>(NL80211_ATTR_SUPPORTED_COMMANDS).value();
+        for(auto attr: cmd_attrs)
+          w->supported_cmds.push_back(attr.value());
+
+        auto iftype_attrs = msg.get<std::vector<MessageAttribute<void>>>(NL80211_ATTR_SUPPORTED_IFTYPES).value();
+        for(auto attr: iftype_attrs)
+          w->supported_iftypes.push_back(attr.type());
+      } catch(...) {
+        cmd_arg->e = std::current_exception();
+      }
+
+      return NL_OK;
+    };
+    
+  }
 
   void new_key(Socket& nlsock, std::uint32_t if_idx, std::uint8_t key_idx,
     std::uint32_t cipher, std::array<std::uint8_t, 6> const& mac,
@@ -55,8 +81,6 @@ namespace streetpass::nl80211::commands {
     nlsock.send_message(msg);
     nlsock.recv_messages();
   }
-
-
 
   void join_ibss(Socket& nlsock, std::uint32_t if_idx, std::string const& ssid,
     std::uint32_t freq, bool fixed_freq, std::array<std::uint8_t, 6> const& bssid)
@@ -119,28 +143,6 @@ namespace streetpass::nl80211::commands {
     nlsock.send_message(msg);
     nlsock.recv_messages();
   }
-
-  int parse_wiphy_message(MessageParser& msg, void* arg) {
-    auto cmd_arg = static_cast<struct command_arg*>(arg);
-    auto w = static_cast<struct wiphy*>(cmd_arg->arg);
-
-    try {
-      w->index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
-      w->name = msg.get<std::string>(NL80211_ATTR_WIPHY_NAME).value();
-
-      auto cmd_attrs = msg.get<std::vector<MessageAttribute<std::uint32_t>>>(NL80211_ATTR_SUPPORTED_COMMANDS).value();
-      for(auto attr: cmd_attrs)
-        w->supported_cmds.push_back(attr.value());
-
-      auto iftype_attrs = msg.get<std::vector<MessageAttribute<void>>>(NL80211_ATTR_SUPPORTED_IFTYPES).value();
-      for(auto attr: iftype_attrs)
-        w->supported_iftypes.push_back(attr.type());
-    } catch(...) {
-      cmd_arg->e = std::current_exception();
-    }
-
-    return NL_OK;
-  };
 
   wiphy get_wiphy(Socket& nlsock, std::uint32_t wiphy) {
     Message msg(NL80211_CMD_GET_WIPHY, nlsock.get_driver_id());
