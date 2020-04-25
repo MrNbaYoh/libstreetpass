@@ -16,11 +16,11 @@ namespace streetpass::nl80211::commands {
 
       auto cmd_attrs = msg.get<std::vector<MessageAttribute<std::uint32_t>>>(NL80211_ATTR_SUPPORTED_COMMANDS).value();
       for(auto attr: cmd_attrs)
-        w->supported_cmds.push_back(attr.value());
+        w->supported_cmds.insert(attr.value());
 
       auto iftype_attrs = msg.get<std::vector<MessageAttribute<void>>>(NL80211_ATTR_SUPPORTED_IFTYPES).value();
       for(auto attr: iftype_attrs)
-        w->supported_iftypes.push_back(attr.type());
+        w->supported_iftypes.insert(attr.type());
     }
 
     void parse_interface_message(MessageParser& msg, void* arg) {

@@ -94,15 +94,13 @@ namespace streetpass::iface {
   }
 
   void Physical::check_supported() const {
-    std::vector<std::uint32_t> const& types = m_supported_iftypes;
-    auto type_it = std::find(types.begin(), types.end(), NL80211_IFTYPE_ADHOC);
-    if(type_it == types.end())
+    auto type_it = m_supported_iftypes.find(NL80211_IFTYPE_ADHOC);
+    if(type_it == m_supported_iftypes.end())
       throw UnsupportedPhysicalInterface("Interface does not support adhoc mode");
 
-    std::vector<std::uint32_t> const& cmds = m_supported_cmds;
     for(const auto& req: required_cmds){
-      auto cmd_it = std::find(cmds.begin(), cmds.end(), req.cmd);
-      if(cmd_it == cmds.end())
+      auto cmd_it = m_supported_cmds.find(req.cmd);
+      if(cmd_it == m_supported_cmds.end())
         throw UnsupportedPhysicalInterface(req.error_msg);
     }
   }

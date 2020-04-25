@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <unordered_set>
 
 #include "nl80211/socket.hpp"
 
@@ -18,8 +19,8 @@ namespace streetpass::nl80211 {
   struct wiphy {
     std::uint32_t index;
     std::string name;
-    std::vector<std::uint32_t> supported_cmds;
-    std::vector<std::uint32_t> supported_iftypes;
+    std::unordered_set<std::uint32_t> supported_cmds;
+    std::unordered_set<std::uint32_t> supported_iftypes;
   };
 
   namespace commands {

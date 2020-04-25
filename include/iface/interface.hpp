@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_set>
 #include <exception>
 #include "nl80211/commands.hpp"
 
@@ -28,8 +29,8 @@ namespace streetpass::iface {
   class Physical {
   private:
     std::uint32_t m_index;
-    std::vector<std::uint32_t> m_supported_cmds;
-    std::vector<std::uint32_t> m_supported_iftypes;
+    std::unordered_set<std::uint32_t> m_supported_cmds;
+    std::unordered_set<std::uint32_t> m_supported_iftypes;
 
     Physical(nl80211::wiphy wiphy);
     static nl80211::wiphy get_all_info(std::uint32_t index);
