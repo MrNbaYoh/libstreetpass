@@ -6,6 +6,7 @@
 using namespace streetpass;
 
 int main(int argc, char** argv) {
-
+  iface::Physical phys(12);
+  phys.setup_streetpass_interface();
   return 0;
 }

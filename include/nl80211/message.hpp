@@ -49,14 +49,7 @@ namespace streetpass::nl80211 {
       return m_content;
     }
   };
-
-  template class MessageAttribute<bool>;
-  template class MessageAttribute<std::uint8_t>;
-  template class MessageAttribute<std::uint16_t>;
-  template class MessageAttribute<std::uint32_t>;
-  template class MessageAttribute<std::string>;
-  template class MessageAttribute<std::vector<std::uint8_t>>;
-
+  
   template <>
   class MessageAttribute<void> {
   private:

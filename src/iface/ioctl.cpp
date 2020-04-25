@@ -28,7 +28,7 @@ namespace streetpass::ioctl {
       struct ifreq ifr = {};
 
     	if_name.copy(ifr.ifr_name, IFNAMSIZ - 1, 0);
-    	int ret = ioctl(socket.get_fd(), SIOCGIFFLAGS, &ifr);
+    	int ret = ::ioctl(socket.get_fd(), SIOCGIFFLAGS, &ifr);
     	if(ret < 0)
     		throw std::system_error(errno, std::generic_category());
 
@@ -40,7 +40,7 @@ namespace streetpass::ioctl {
 
     	ifr.ifr_flags = flags;
     	if_name.copy(ifr.ifr_name, IFNAMSIZ - 1);
-    	int ret = ioctl(socket.get_fd(), SIOCSIFFLAGS, &ifr);
+    	int ret = ::ioctl(socket.get_fd(), SIOCSIFFLAGS, &ifr);
     	if(ret < 0)
     		throw std::system_error(errno, std::generic_category());
     }
@@ -60,7 +60,7 @@ namespace streetpass::ioctl {
     struct ifreq ifr = {};
 
   	if_name.copy(ifr.ifr_name, IFNAMSIZ - 1);
-  	int ret = ioctl(socket.get_fd(), SIOCGIFHWADDR, &ifr);
+  	int ret = ::ioctl(socket.get_fd(), SIOCGIFHWADDR, &ifr);
   	if(ret < 0)
   		throw std::system_error(errno, std::generic_category());
 
@@ -76,7 +76,7 @@ namespace streetpass::ioctl {
   	std::copy(std::begin(addr), std::end(addr), ifr.ifr_hwaddr.sa_data);
   	ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
 
-  	int ret = ioctl(socket.get_fd(), SIOCSIFHWADDR, &ifr);
+  	int ret = ::ioctl(socket.get_fd(), SIOCSIFHWADDR, &ifr);
   	if(ret < 0)
   		throw std::system_error(errno, std::generic_category());
   }
@@ -85,7 +85,7 @@ namespace streetpass::ioctl {
     struct ifreq ifr = {};
 
     if_name.copy(ifr.ifr_name, IFNAMSIZ - 1);
-    int ret = ioctl(socket.get_fd(), SIOCGIFINDEX, &ifr);
+    int ret = ::ioctl(socket.get_fd(), SIOCGIFINDEX, &ifr);
     if(ret < 0)
       throw std::system_error(errno, std::generic_category());
 

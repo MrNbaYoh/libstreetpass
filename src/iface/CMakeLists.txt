@@ -8,6 +8,7 @@ add_library(streetpass::iface ALIAS StreetpassIface)
 target_sources(StreetpassIface
     PRIVATE
         interface.cpp
+        ioctl.cpp
     )
 
 target_include_directories(StreetpassIface
