@@ -4,7 +4,7 @@
 #include <string>
 #include <cstdint>
 
-namespace streetpass::ifioctl {
+namespace streetpass::ioctl {
   class Socket {
   private:
     int sock;

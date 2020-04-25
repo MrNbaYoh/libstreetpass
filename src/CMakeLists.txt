@@ -4,7 +4,6 @@ include(ClangFormat)
 ## Subdirectories ##
 ####################
 
-add_subdirectory(utils)
 add_subdirectory(nl80211)
 add_subdirectory(crypto)
 add_subdirectory(iface)
@@ -20,6 +19,6 @@ target_sources(Streetpass
         main.cpp
     )
 
-target_link_libraries(Streetpass PRIVATE streetpass::nl80211 streetpass::utils streetpass::crypto streetpass::iface)
+target_link_libraries(Streetpass PRIVATE streetpass::nl80211 streetpass::crypto streetpass::iface)
 
 target_clangformat_setup(Streetpass)

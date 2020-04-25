@@ -1,5 +1,5 @@
 #include "iface/interface.hpp"
-#include "utils/ifioctl.hpp"
+#include "iface/ioctl.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -25,14 +25,14 @@ namespace streetpass::iface {
 
   void Virtual::up() const {
     //TODO: exception handling?
-    ifioctl::Socket sock;
-    ifioctl::set_interface_up(sock, get_name());
+    ioctl::Socket sock;
+    ioctl::set_interface_up(sock, get_name());
   }
 
   void Virtual::down() const {
     //TODO: exception handling?
-    ifioctl::Socket sock;
-    ifioctl::set_interface_down(sock, get_name());
+    ioctl::Socket sock;
+    ioctl::set_interface_down(sock, get_name());
   }
 
   Physical::Physical(nl80211::wiphy wiphy) : m_index(wiphy.index),

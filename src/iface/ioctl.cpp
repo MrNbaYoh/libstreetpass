@@ -1,4 +1,4 @@
-#include "utils/ifioctl.hpp"
+#include "iface/ioctl.hpp"
 
 #include <sys/ioctl.h>
 #include <net/if.h>
@@ -7,7 +7,7 @@
 #include <cstring>
 #include <system_error>
 
-namespace streetpass::ifioctl {
+namespace streetpass::ioctl {
 
   Socket::Socket() {
     sock = socket(PF_INET, SOCK_DGRAM, 0);

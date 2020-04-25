@@ -1,6 +1,5 @@
 #include <iostream>
 #include <iomanip>
-#include "utils/endianness.hpp"
 #include "nl80211/socket.hpp"
 #include "iface/interface.hpp"
 
