@@ -29,6 +29,6 @@ namespace streetpass::nl80211 {
     void send_message(Message& msg);
     void recv_messages();
     void recv_messages(std::function<void(MessageParser&, void*)> callback,
-      void* arg);
+      void* arg, bool disable_seq_check = false);
   };
 }

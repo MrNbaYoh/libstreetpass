@@ -86,7 +86,7 @@ namespace streetpass::nl80211 {
       throw NlError(err, "An error occured while receiving messages");
   }
 
-  void Socket::recv_messages(std::function<void(MessageParser&, void*)> callback, void* arg) {
+  void Socket::recv_messages(std::function<void(MessageParser&, void*)> callback, void* arg, bool disable_seq_check) {
     nl_cb* cb = nl_cb_alloc(NL_CB_DEFAULT);
     if(cb == nullptr)
       throw std::bad_alloc();
@@ -107,12 +107,17 @@ namespace streetpass::nl80211 {
       return (*static_cast<decltype(recv_msg_cb)*>(arg))(nlmsg);
     };
 
+    auto no_seq_check = [](nl_msg*, void*) -> int {
+      return NL_OK;
+    };
+
     int err = 1;
 
     nl_cb_err(cb, NL_CB_CUSTOM, error_handler, &err);
     nl_cb_set(cb, NL_CB_ACK, NL_CB_CUSTOM, ack_handler, &err);
     nl_cb_set(cb, NL_CB_FINISH, NL_CB_CUSTOM, finish_handler, &err);
-
+    if(disable_seq_check)
+      nl_cb_set(cb, NL_CB_SEQ_CHECK, NL_CB_CUSTOM, no_seq_check, nullptr);
     nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, valid_handler, &recv_msg_cb);
 
     try {
