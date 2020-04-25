@@ -86,22 +86,21 @@ namespace streetpass::nl80211 {
       throw NlError(err, "An error occured while receiving messages");
   }
 
-  void Socket::recv_messages(std::function<int(MessageParser&, void*)> callback, void* arg) {
+  void Socket::recv_messages(std::function<void(MessageParser&, void*)> callback, void* arg) {
     nl_cb* cb = nl_cb_alloc(NL_CB_DEFAULT);
     if(cb == nullptr)
       throw std::bad_alloc();
 
     std::exception_ptr ex;
 
-    auto recv_msg_cb = [callback, arg, &ex](nl_msg *nlmsg) {
+    auto recv_msg_cb = [callback, arg, &ex](nl_msg *nlmsg) -> int {
       MessageParser msg(nlmsg);
-      int res;
       try {
-        res = callback(msg, arg);
+        callback(msg, arg);
       } catch(...) {
         ex = std::current_exception();
       }
-      return res;
+      return NL_OK;
     };
 
     auto valid_handler = [](nl_msg* nlmsg, void* arg) {

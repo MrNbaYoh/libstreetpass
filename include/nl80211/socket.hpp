@@ -28,7 +28,7 @@ namespace streetpass::nl80211 {
     int get_driver_id() const;
     void send_message(Message& msg);
     void recv_messages();
-    void recv_messages(std::function<int(MessageParser&, void*)> callback,
+    void recv_messages(std::function<void(MessageParser&, void*)> callback,
       void* arg);
   };
 }

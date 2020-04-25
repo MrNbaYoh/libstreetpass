@@ -8,12 +8,7 @@ namespace streetpass::nl80211::commands {
 
   namespace {
 
-    struct command_arg {
-      std::exception_ptr e;
-      void* arg;
-    };
-
-    int parse_wiphy_message(MessageParser& msg, void* arg) {
+    void parse_wiphy_message(MessageParser& msg, void* arg) {
       auto w = static_cast<struct wiphy*>(arg);
 
       w->index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
@@ -26,11 +21,9 @@ namespace streetpass::nl80211::commands {
       auto iftype_attrs = msg.get<std::vector<MessageAttribute<void>>>(NL80211_ATTR_SUPPORTED_IFTYPES).value();
       for(auto attr: iftype_attrs)
         w->supported_iftypes.push_back(attr.type());
-
-      return NL_OK;
     }
 
-    int parse_interface_message(MessageParser& msg, void* arg) {
+    void parse_interface_message(MessageParser& msg, void* arg) {
       auto w = static_cast<struct wiface*>(arg);
 
       w->index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
@@ -40,8 +33,6 @@ namespace streetpass::nl80211::commands {
 
       auto mac = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_MAC).value();
       std::copy_n(mac.begin(), 6, w->mac.begin());
-
-      return NL_OK;
     }
   }
 
@@ -147,20 +138,17 @@ namespace streetpass::nl80211::commands {
   }
 
   std::vector<wiphy> get_wiphy_list(Socket& nlsock) {
-    auto resp_handler = [](MessageParser& msg, void* arg) -> int {
-      auto cmd_arg = static_cast<struct command_arg*>(arg);
-      auto v = static_cast<std::vector<struct wiphy>*>(cmd_arg->arg);
+    auto resp_handler = [](MessageParser& msg, void* arg) {
+      auto v = static_cast<std::vector<struct wiphy>*>(arg);
 
       auto index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();;
       if(!v->empty() && v->back().index == index)
-        return NL_OK;
+        return;
 
       struct wiphy w;
       parse_wiphy_message(msg, &w);
 
       v->push_back(w);
-
-      return NL_OK;
     };
     Message msg(NL80211_CMD_GET_WIPHY, nlsock.get_driver_id(), NLM_F_DUMP);
 
@@ -173,18 +161,16 @@ namespace streetpass::nl80211::commands {
   }
 
   std::vector<wiface> get_interface_list(Socket& nlsock, std::uint32_t wiphy) {
-    auto resp_handler = [](MessageParser& msg, void* arg) -> int {
+    auto resp_handler = [](MessageParser& msg, void* arg) {
       auto v = static_cast<std::vector<struct wiface>*>(arg);
 
       auto index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
       if(!v->empty() && v->back().index == index)
-        return NL_OK;
+        return;
 
       struct wiface i;
       parse_interface_message(msg, &i);
       v->push_back(i);
-
-      return NL_OK;
     };
     Message msg(NL80211_CMD_GET_INTERFACE, nlsock.get_driver_id(), NLM_F_DUMP);
     msg.put(NL80211_ATTR_WIPHY, wiphy);
