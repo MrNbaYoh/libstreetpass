@@ -21,6 +21,10 @@ namespace streetpass::nl80211::commands {
       auto iftype_attrs = msg.get<std::vector<MessageAttribute<void>>>(NL80211_ATTR_SUPPORTED_IFTYPES).value();
       for(auto attr: iftype_attrs)
         w->supported_iftypes.insert(attr.type());
+
+      auto cipher_attrs = msg.get<std::vector<MessageAttribute<void>>>(NL80211_ATTR_CIPHER_SUITES).value();
+      for(auto attr: cipher_attrs)
+        w->supported_ciphers.insert(attr.type());
     }
 
     void parse_interface_message(MessageParser& msg, void* arg) {

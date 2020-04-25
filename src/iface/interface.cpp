@@ -37,7 +37,8 @@ namespace streetpass::iface {
 
   Physical::Physical(nl80211::wiphy wiphy) : m_index(wiphy.index),
     m_supported_cmds(wiphy.supported_cmds),
-    m_supported_iftypes(wiphy.supported_iftypes) {}
+    m_supported_iftypes(wiphy.supported_iftypes),
+    m_supported_ciphers(wiphy.supported_ciphers) {}
 
   Physical::Physical(std::uint32_t index) : Physical(get_all_info(index)) {}
 
@@ -91,6 +92,7 @@ namespace streetpass::iface {
       {NL80211_CMD_JOIN_IBSS, "Interface does not support joining IBSS"},
       {NL80211_CMD_FRAME, "Interface does not support sending custom frames"}
     };
+    constexpr std::uint32_t CIPHER_CCMP_128 = 0x000fac04;
   }
 
   void Physical::check_supported() const {
@@ -103,6 +105,10 @@ namespace streetpass::iface {
       if(cmd_it == m_supported_cmds.end())
         throw UnsupportedPhysicalInterface(req.error_msg);
     }
+
+    auto cipher_it = m_supported_ciphers.find(CIPHER_CCMP_128);
+    if(cipher_it == m_supported_ciphers.end())
+      throw UnsupportedPhysicalInterface("Interface does not support AES-CCMP-128 cipher");
   }
 
   std::vector<Virtual> Physical::find_all_virtual() const {

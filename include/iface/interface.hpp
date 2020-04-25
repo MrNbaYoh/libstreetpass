@@ -31,6 +31,7 @@ namespace streetpass::iface {
     std::uint32_t m_index;
     std::unordered_set<std::uint32_t> m_supported_cmds;
     std::unordered_set<std::uint32_t> m_supported_iftypes;
+    std::unordered_set<std::uint32_t> m_supported_ciphers;
 
     Physical(nl80211::wiphy wiphy);
     static nl80211::wiphy get_all_info(std::uint32_t index);

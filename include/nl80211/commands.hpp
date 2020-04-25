@@ -21,6 +21,7 @@ namespace streetpass::nl80211 {
     std::string name;
     std::unordered_set<std::uint32_t> supported_cmds;
     std::unordered_set<std::uint32_t> supported_iftypes;
+    std::unordered_set<std::uint32_t> supported_ciphers;
   };
 
   namespace commands {
