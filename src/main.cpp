@@ -7,8 +7,9 @@
 using namespace streetpass;
 
 int main(int argc, char** argv) {
-  nl80211::Socket nlsock;
-  nl80211::commands::get_wiphy(nlsock, 42);
-
+  iface::Physical phys(12);
+  auto v = phys.find_all_virtual();
+  for(auto e: v)
+    std::cout << e.get_name() << std::endl;
   return 0;
 }

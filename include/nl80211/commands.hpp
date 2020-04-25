@@ -48,6 +48,7 @@ namespace streetpass::nl80211 {
     wiphy get_wiphy(Socket& nlsock, std::uint32_t wiphy);
     std::vector<wiphy> get_wiphy_list(Socket& nlsock);
 
+    wiface get_interface(Socket& nlsock, std::uint32_t if_idx);
     std::vector<wiface> get_interface_list(Socket& nlsock, std::uint32_t wiphy);
   }
 }

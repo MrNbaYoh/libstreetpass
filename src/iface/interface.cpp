@@ -8,21 +8,47 @@
 
 namespace streetpass::iface {
 
-  Virtual::Virtual(nl80211::wiface wiface) : m_wiface(wiface) {}
+  Virtual::Virtual(std::uint32_t index) : m_index(index) {}
+
+  nl80211::wiface Virtual::get_all_info(std::uint32_t index) {
+    nl80211::Socket nlsock;
+    return nl80211::commands::get_interface(nlsock, index);
+  }
+
+  std::array<std::uint8_t, 6> Virtual::get_mac_addr() const {
+    return get_all_info(m_index).mac;
+  }
+
+  std::string Virtual::get_name() const {
+    return get_all_info(m_index).name;
+  }
 
   void Virtual::up() const {
     //TODO: exception handling?
     ifioctl::Socket sock;
-    ifioctl::set_interface_up(sock, m_wiface.name);
+    ifioctl::set_interface_up(sock, get_name());
   }
 
   void Virtual::down() const {
     //TODO: exception handling?
     ifioctl::Socket sock;
-    ifioctl::set_interface_down(sock, m_wiface.name);
+    ifioctl::set_interface_down(sock, get_name());
   }
 
-  Physical::Physical(nl80211::wiphy wiphy) : m_wiphy(wiphy) {}
+  Physical::Physical(nl80211::wiphy wiphy) : m_index(wiphy.index),
+    m_supported_cmds(wiphy.supported_cmds),
+    m_supported_iftypes(wiphy.supported_iftypes) {}
+
+  Physical::Physical(std::uint32_t index) : Physical(get_all_info(index)) {}
+
+  nl80211::wiphy Physical::get_all_info(std::uint32_t index) {
+    nl80211::Socket nlsock;
+    return nl80211::commands::get_wiphy(nlsock, index);
+  }
+
+  std::string Physical::get_name() const {
+    return get_all_info(m_index).name;
+  }
 
   Virtual Physical::setup_streetpass_interface(std::string const& name) const {
     check_supported();
@@ -33,7 +59,8 @@ namespace streetpass::iface {
 
     //TODO: exception handling
     nl80211::Socket nlsock;
-    Virtual virt = nl80211::commands::new_interface(nlsock, m_wiphy.index, NL80211_IFTYPE_ADHOC, name);
+    nl80211::wiface w = nl80211::commands::new_interface(nlsock, m_index, NL80211_IFTYPE_ADHOC, name);
+    Virtual virt(w.index);
     std::this_thread::sleep_for (std::chrono::seconds(1));
     virt.down();
     nl80211::commands::set_interface_mode(nlsock, virt.get_id(), NL80211_IFTYPE_ADHOC);
@@ -54,12 +81,12 @@ namespace streetpass::iface {
   }
 
   void Physical::check_supported() const {
-    std::vector<std::uint32_t> const& types = m_wiphy.supported_iftypes;
+    std::vector<std::uint32_t> const& types = m_supported_iftypes;
     auto type_it = std::find(types.begin(), types.end(), NL80211_IFTYPE_ADHOC);
     if(type_it == types.end())
       throw UnsupportedPhysicalInterface("Interface does not support adhoc mode");
 
-    std::vector<std::uint32_t> const& cmds = m_wiphy.supported_cmds;
+    std::vector<std::uint32_t> const& cmds = m_supported_cmds;
     auto cmd_it = std::find(cmds.begin(), cmds.end(), NL80211_CMD_NEW_INTERFACE);
     if(cmd_it == cmds.end())
       throw UnsupportedPhysicalInterface("Interface does not support creating new virtual interfaces");
@@ -81,9 +108,9 @@ namespace streetpass::iface {
     std::vector<Virtual> res;
 
     nl80211::Socket nlsock;
-    std::vector<nl80211::wiface> wifaces = nl80211::commands::get_interface_list(nlsock, m_wiphy.index);
+    std::vector<nl80211::wiface> wifaces = nl80211::commands::get_interface_list(nlsock, m_index);
     std::transform(wifaces.begin(), wifaces.end(), std::back_inserter(res),
-      [](auto x) { return Virtual(x); });
+      [](auto x) { return Virtual(x.index); });
 
     return res;
   }

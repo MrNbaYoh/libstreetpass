@@ -160,6 +160,18 @@ namespace streetpass::nl80211::commands {
     return v;
   }
 
+  wiface get_interface(Socket& nlsock, std::uint32_t if_idx) {
+    Message msg(NL80211_CMD_GET_INTERFACE, nlsock.get_driver_id());
+    msg.put(NL80211_ATTR_IFINDEX, if_idx);
+
+    nlsock.send_message(msg);
+
+    struct wiface w = {};
+    nlsock.recv_messages(parse_interface_message, &w);
+
+    return w;
+  }
+
   std::vector<wiface> get_interface_list(Socket& nlsock, std::uint32_t wiphy) {
     auto resp_handler = [](MessageParser& msg, void* arg) {
       auto v = static_cast<std::vector<struct wiface>*>(arg);

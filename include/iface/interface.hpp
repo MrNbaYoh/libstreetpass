@@ -8,36 +8,39 @@ namespace streetpass::iface {
 
   class Virtual {
   private:
-    nl80211::wiface m_wiface;
+    std::uint32_t m_index;
 
-    Virtual(nl80211::wiface wiface);
+    Virtual(std::uint32_t index);
     friend class Physical;
+    static nl80211::wiface get_all_info(std::uint32_t index);
   public:
-    inline std::array<std::uint8_t, 6> get_mac_addr() const noexcept {
-      return m_wiface.mac;
-    }
-    inline std::string get_name() const noexcept {
-      return m_wiface.name;
-    }
     inline std::uint32_t get_id() const noexcept {
-      return m_wiface.index;
+      return m_index;
     }
+
+    std::array<std::uint8_t, 6> get_mac_addr() const;
+    std::string get_name() const;
+
     void up() const;
     void down() const;
   };
 
   class Physical {
   private:
-    nl80211::wiphy m_wiphy;
+    std::uint32_t m_index;
+    std::vector<std::uint32_t> m_supported_cmds;
+    std::vector<std::uint32_t> m_supported_iftypes;
 
     Physical(nl80211::wiphy wiphy);
+    static nl80211::wiphy get_all_info(std::uint32_t index);
   public:
-    inline std::string get_name() const noexcept {
-      return m_wiphy.name;
-    }
+    Physical(std::uint32_t index);
+
     inline std::uint32_t get_id() const noexcept {
-      return m_wiphy.index;
+      return m_index;
     }
+
+    std::string get_name() const;
 
     std::vector<Virtual> find_all_virtual() const;
     bool is_supported() const noexcept;
