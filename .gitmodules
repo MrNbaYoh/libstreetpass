@@ -1,3 +1,6 @@
 [submodule "clangformat-cmake"]
 	path = externals/clangformat-cmake
 	url = https://github.com/zemasoft/clangformat-cmake
+[submodule "externals/libtins"]
+	path = externals/libtins
+	url = https://github.com/mfontanini/libtins

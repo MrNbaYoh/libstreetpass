@@ -20,6 +20,6 @@ target_sources(Streetpass
         main.cpp
     )
 
-target_link_libraries(Streetpass PRIVATE streetpass::nl80211 streetpass::utils streetpass::crypto streetpass::iface)
+target_link_libraries(Streetpass PRIVATE tins streetpass::nl80211 streetpass::utils streetpass::crypto streetpass::iface)
 
 target_clangformat_setup(Streetpass)
