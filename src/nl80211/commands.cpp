@@ -104,7 +104,7 @@ namespace streetpass::nl80211::commands {
   }
 
   wiface new_interface(Socket& nlsock, std::uint32_t wiphy, nl80211_iftype type,
-    std::string const& name)
+    std::string const& name, bool socket_owner)
   {
     if(name.size() > IFNAMSIZ - 1)
       throw std::invalid_argument("Interface name is too long");
@@ -113,6 +113,8 @@ namespace streetpass::nl80211::commands {
     msg.put(NL80211_ATTR_WIPHY, wiphy);
     msg.put(NL80211_ATTR_IFTYPE, static_cast<std::uint32_t>(type));
     msg.put(NL80211_ATTR_IFNAME, name);
+    if(socket_owner)
+      msg.put(NL80211_ATTR_SOCKET_OWNER);
     nlsock.send_message(msg);
 
     struct wiface w;

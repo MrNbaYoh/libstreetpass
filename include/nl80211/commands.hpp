@@ -43,7 +43,7 @@ namespace streetpass::nl80211 {
       std::uint32_t freq, bool fixed_freq, std::array<std::uint8_t, 6> const& bssid);
 
     wiface new_interface(Socket& nlsock, std::uint32_t wiphy, nl80211_iftype type,
-      std::string const& name);
+      std::string const& name, bool socket_owner = false);
 
     void del_interface(Socket& nlsock, std::uint32_t if_idx);
 
