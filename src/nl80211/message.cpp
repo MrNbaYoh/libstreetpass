@@ -107,6 +107,18 @@ namespace streetpass::nl80211 {
   }
 
   template<>
+  void MessageAttribute<std::vector<std::uint16_t>>::load_content(nlattr* attr) {
+    std::uint16_t* data = static_cast<std::uint16_t*>(nla_data(attr));
+    m_content = std::vector<std::uint16_t>(data, data + m_len/sizeof(std::uint16_t));
+  }
+
+  template<>
+  void MessageAttribute<std::vector<std::uint32_t>>::load_content(nlattr* attr) {
+    std::uint32_t* data = static_cast<std::uint32_t*>(nla_data(attr));
+    m_content = std::vector<std::uint32_t>(data, data + m_len/sizeof(std::uint32_t));
+  }
+
+  template<>
   void MessageAttribute<bool>::load_content(nlattr* attr) {
     m_content = nla_get_flag(attr);
   }
@@ -117,5 +129,7 @@ namespace streetpass::nl80211 {
   template class MessageAttribute<std::uint32_t>;
   template class MessageAttribute<std::string>;
   template class MessageAttribute<std::vector<std::uint8_t>>;
+  template class MessageAttribute<std::vector<std::uint16_t>>;
+  template class MessageAttribute<std::vector<std::uint32_t>>;
 
 }
