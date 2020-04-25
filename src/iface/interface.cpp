@@ -80,6 +80,19 @@ namespace streetpass::iface {
     return true;
   }
 
+  namespace {
+    struct command_requirement {
+      std::uint32_t cmd;
+      std::string error_msg;
+    };
+    std::vector<command_requirement> required_cmds = {
+      {NL80211_CMD_NEW_INTERFACE,"Interface does not support creating new virtual interfaces"},
+      {NL80211_CMD_NEW_KEY, "Interface does not support adding new crypto keys"},
+      {NL80211_CMD_JOIN_IBSS, "Interface does not support joining IBSS"},
+      {NL80211_CMD_FRAME, "Interface does not support sending custom frames"}
+    };
+  }
+
   void Physical::check_supported() const {
     std::vector<std::uint32_t> const& types = m_supported_iftypes;
     auto type_it = std::find(types.begin(), types.end(), NL80211_IFTYPE_ADHOC);
@@ -87,21 +100,11 @@ namespace streetpass::iface {
       throw UnsupportedPhysicalInterface("Interface does not support adhoc mode");
 
     std::vector<std::uint32_t> const& cmds = m_supported_cmds;
-    auto cmd_it = std::find(cmds.begin(), cmds.end(), NL80211_CMD_NEW_INTERFACE);
-    if(cmd_it == cmds.end())
-      throw UnsupportedPhysicalInterface("Interface does not support creating new virtual interfaces");
-
-    cmd_it = std::find(cmds.begin(), cmds.end(), NL80211_CMD_NEW_KEY);
-    if(cmd_it == cmds.end())
-      throw UnsupportedPhysicalInterface("Interface does not support adding new crypto keys");
-
-    cmd_it = std::find(cmds.begin(), cmds.end(), NL80211_CMD_JOIN_IBSS);
-    if(cmd_it == cmds.end())
-      throw UnsupportedPhysicalInterface("Interface does not support joining IBSS");
-
-    cmd_it = std::find(cmds.begin(), cmds.end(), NL80211_CMD_FRAME);
-    if(cmd_it == cmds.end())
-      throw UnsupportedPhysicalInterface("Interface does not support sending custom frames");
+    for(const auto& req: required_cmds){
+      auto cmd_it = std::find(cmds.begin(), cmds.end(), req.cmd);
+      if(cmd_it == cmds.end())
+        throw UnsupportedPhysicalInterface(req.error_msg);
+    }
   }
 
   std::vector<Virtual> Physical::find_all_virtual() const {
