@@ -22,9 +22,10 @@ namespace streetpass::nl80211::commands {
       for(auto attr: iftype_attrs)
         w->supported_iftypes.insert(attr.type());
 
-      auto cipher_attrs = msg.get<std::vector<MessageAttribute<void>>>(NL80211_ATTR_CIPHER_SUITES).value();
-      for(auto attr: cipher_attrs)
-        w->supported_ciphers.insert(attr.type());
+      auto ciphers = msg.get<std::vector<std::uint32_t>>(NL80211_ATTR_CIPHER_SUITES).value();
+      for(auto c: ciphers) {
+        w->supported_ciphers.insert(c);
+      }
     }
 
     void parse_interface_message(MessageParser& msg, void* arg) {
