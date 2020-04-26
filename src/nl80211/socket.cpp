@@ -92,13 +92,16 @@ namespace streetpass::nl80211 {
       throw std::bad_alloc();
 
     std::exception_ptr ex;
+    int err = 1;
 
-    auto recv_msg_cb = [callback, arg, &ex](nl_msg *nlmsg) -> int {
+    auto recv_msg_cb = [callback, arg, &ex, &err](nl_msg *nlmsg) -> int {
       MessageParser msg(nlmsg);
       try {
         callback(msg, arg);
       } catch(...) {
         ex = std::current_exception();
+        err = -1;
+        return NL_STOP;
       }
       return NL_OK;
     };
@@ -110,8 +113,6 @@ namespace streetpass::nl80211 {
     auto no_seq_check = [](nl_msg*, void*) -> int {
       return NL_OK;
     };
-
-    int err = 1;
 
     nl_cb_err(cb, NL_CB_CUSTOM, error_handler, &err);
     nl_cb_set(cb, NL_CB_ACK, NL_CB_CUSTOM, ack_handler, &err);
