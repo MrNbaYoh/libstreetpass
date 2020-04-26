@@ -27,14 +27,18 @@ namespace streetpass::iface {
       Tins::Dot11::Types::MANAGEMENT | (Tins::Dot11::ManagementSubtypes::PROBE_REQ << 4));
 
     auto handler = [](nl80211::MessageParser& msg, void*) {
+      std::vector<std::uint8_t> data;
       try {
-        auto data = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_FRAME).value();
-        Tins::Dot11ProbeRequest probereq(data.data(), data.size());
-        std::cout << "-- Found Probe Request --" << std::endl;
-        std::cout << probereq.ssid() << std::endl;
+        data = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_FRAME).value();
       } catch(...) {
         std::cerr << "Not a probe request frame" << std::endl;
+        return;
       }
+
+      Tins::Dot11ProbeRequest probereq(data.data(), data.size());
+      std::cout << "-- Found Probe Request --" << std::endl;
+      std::cout << probereq.ssid() << std::endl;
+      throw "STOP";
     };
 
     scan_sock.recv_messages(handler, nullptr, true);
