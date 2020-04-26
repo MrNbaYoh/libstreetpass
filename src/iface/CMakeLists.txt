@@ -19,6 +19,5 @@ target_include_directories(StreetpassIface
         $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>
     )
 
-target_include_directories(StreetpassIface PUBLIC ${LIBTINS_INCLUDE_DIRS})
-target_link_libraries(StreetpassIface PUBLIC ${LIBTINS_LIBRARIES})
-target_link_libraries(StreetpassIface PRIVATE streetpass::nl80211)
+target_include_directories(StreetpassIface PRIVATE ${CMAKE_SOURCE_DIR}/externals/libtins/include)
+target_link_libraries(StreetpassIface PRIVATE tins streetpass::nl80211)

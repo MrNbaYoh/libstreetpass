@@ -1,7 +1,9 @@
 #include "iface/streetpass.hpp"
+#include "nl80211/message.hpp"
 
 #include <thread>
 #include <chrono>
+#include <tins/tins.h>
 
 namespace streetpass::iface {
 
@@ -16,5 +18,25 @@ namespace streetpass::iface {
     std::this_thread::sleep_for (std::chrono::seconds(1));
     up();
     nl80211::commands::join_ibss(nlsock, m_index, SSID, 2412, true, w.mac);
+  }
+
+  void StreetpassInterface::scan() {
+    nl80211::Socket scan_sock;
+    std::cout << std::hex << (Tins::Dot11::Types::MANAGEMENT | Tins::Dot11::ManagementSubtypes::PROBE_REQ << 4) << std::endl;
+    nl80211::commands::register_frame(scan_sock, m_index,
+      Tins::Dot11::Types::MANAGEMENT | (Tins::Dot11::ManagementSubtypes::PROBE_REQ << 4));
+
+    auto handler = [](nl80211::MessageParser& msg, void*) {
+      try {
+        auto data = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_FRAME).value();
+        Tins::Dot11ProbeRequest probereq(data.data(), data.size());
+        std::cout << "-- Found Probe Request --" << std::endl;
+        std::cout << probereq.ssid() << std::endl;
+      } catch(...) {
+        std::cerr << "Not a probe request frame" << std::endl;
+      }
+    };
+
+    scan_sock.recv_messages(handler, nullptr, true);
   }
 }

@@ -19,6 +19,7 @@ target_sources(Streetpass
         main.cpp
     )
 
-target_link_libraries(Streetpass PRIVATE streetpass::nl80211 streetpass::crypto streetpass::iface)
+target_include_directories(Streetpass PRIVATE ${CMAKE_SOURCE_DIR}/externals/libtins/include)
+target_link_libraries(Streetpass PRIVATE tins streetpass::nl80211 streetpass::crypto streetpass::iface)
 
 target_clangformat_setup(Streetpass)
