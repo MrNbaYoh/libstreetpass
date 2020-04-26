@@ -11,18 +11,24 @@ namespace streetpass::iface {
 
   StreetpassInterface::StreetpassInterface(PhysicalInterface const& phys, std::string const& name) {
     nl80211::wiface w = nl80211::commands::new_interface(nlsock, phys.get_id(), NL80211_IFTYPE_ADHOC, name, true);
+    std::this_thread::sleep_for (std::chrono::seconds(1));
     m_index = w.index;
-    std::this_thread::sleep_for (std::chrono::seconds(1));
-    down();
-    nl80211::commands::set_interface_mode(nlsock, m_index, NL80211_IFTYPE_ADHOC);
-    std::this_thread::sleep_for (std::chrono::seconds(1));
-    up();
+
+    w = nl80211::commands::get_interface(nlsock, m_index);
+    if(w.type != NL80211_IFTYPE_ADHOC) {
+      down();
+      nl80211::commands::set_interface_mode(nlsock, m_index, NL80211_IFTYPE_ADHOC);
+      std::this_thread::sleep_for (std::chrono::seconds(1));
+    }
+
+    if(!is_up())
+      up();
+
     nl80211::commands::join_ibss(nlsock, m_index, SSID, 2412, true, w.mac);
   }
 
   void StreetpassInterface::scan() {
     nl80211::Socket scan_sock;
-    std::cout << std::hex << (Tins::Dot11::Types::MANAGEMENT | Tins::Dot11::ManagementSubtypes::PROBE_REQ << 4) << std::endl;
     nl80211::commands::register_frame(scan_sock, m_index,
       Tins::Dot11::Types::MANAGEMENT | (Tins::Dot11::ManagementSubtypes::PROBE_REQ << 4));
 
