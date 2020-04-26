@@ -46,6 +46,11 @@ namespace streetpass::ioctl {
     }
   }
 
+  bool is_interface_up(Socket const& socket, std::string const& if_name) {
+    short flags = get_interface_flags(socket, if_name);
+    return flags & IFF_UP;
+  }
+
   void set_interface_up(Socket const& socket, std::string const& if_name) {
   	short flags = get_interface_flags(socket, if_name);
   	set_interface_flags(socket, if_name, flags | IFF_UP);

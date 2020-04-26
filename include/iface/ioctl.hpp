@@ -14,6 +14,7 @@ namespace streetpass::ioctl {
     int get_fd() const;
   };
 
+  bool is_interface_up(Socket const& socket, std::string const& if_name);
   void set_interface_up(Socket const& socket, std::string const& if_name);
   void set_interface_down(Socket const& socket, std::string const& if_name);
   std::array<std::uint8_t, 6> get_interface_hwaddr(Socket const& socket, std::string const& if_name);

@@ -22,7 +22,8 @@ namespace streetpass::iface {
 
     std::array<std::uint8_t, 6> get_mac_addr() const;
     std::string get_name() const;
-
+    bool is_up() const;
+    
     void up() const;
     void down() const;
   };

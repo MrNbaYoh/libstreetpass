@@ -19,6 +19,12 @@ namespace streetpass::iface {
     return get_all_info(m_index).name;
   }
 
+  bool VirtualInterface::is_up() const {
+    //TODO: exception handling?
+    ioctl::Socket sock;
+    return ioctl::is_interface_up(sock, get_name());
+  }
+
   void VirtualInterface::up() const {
     //TODO: exception handling?
     ioctl::Socket sock;
