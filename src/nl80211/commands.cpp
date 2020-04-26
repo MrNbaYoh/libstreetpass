@@ -33,7 +33,11 @@ namespace streetpass::nl80211::commands {
 
       w->index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
       w->wiphy = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
-      w->name = msg.get<std::string>(NL80211_ATTR_IFNAME).value();
+      try {
+        w->name = msg.get<std::string>(NL80211_ATTR_IFNAME).value();
+      } catch(...) {
+        w->name = "unnamed";
+      }
       w->type = msg.get<std::uint32_t>(NL80211_ATTR_IFTYPE).value();
 
       auto mac = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_MAC).value();
@@ -148,9 +152,13 @@ namespace streetpass::nl80211::commands {
     auto resp_handler = [](MessageParser& msg, void* arg) {
       auto v = static_cast<std::vector<struct wiphy>*>(arg);
 
-      auto index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();;
-      if(!v->empty() && v->back().index == index)
+      try {
+        auto index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();;
+        if(!v->empty() && v->back().index == index)
+          return;
+      } catch(...) {
         return;
+      }
 
       struct wiphy w;
       parse_wiphy_message(msg, &w);
@@ -183,9 +191,13 @@ namespace streetpass::nl80211::commands {
     auto resp_handler = [](MessageParser& msg, void* arg) {
       auto v = static_cast<std::vector<struct wiface>*>(arg);
 
-      auto index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
-      if(!v->empty() && v->back().index == index)
+      try {
+        auto index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
+        if(!v->empty() && v->back().index == index)
+          return;
+      } catch(...) {
         return;
+      }
 
       struct wiface i;
       parse_interface_message(msg, &i);
