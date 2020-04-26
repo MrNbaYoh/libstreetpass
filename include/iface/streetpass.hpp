@@ -5,6 +5,7 @@
 #include "nl80211/socket.hpp"
 #include "iface/physical.hpp"
 #include "iface/virtual.hpp"
+#include <tins/tins.h>
 
 namespace streetpass::iface {
   class StreetpassInterface : public VirtualInterface {
@@ -21,5 +22,6 @@ namespace streetpass::iface {
     void scan();
 
     static const std::string SSID;
+    static const Tins::HWAddress<3> OUI;
   };
 }

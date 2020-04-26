@@ -7,7 +7,8 @@
 
 namespace streetpass::iface {
 
-  const std::string StreetpassInterface::SSID = "Nintendo_3DS_continuous_scan_000";
+  const std::string StreetpassInterface::SSID("Nintendo_3DS_continuous_scan_000");
+  const Tins::HWAddress<3> StreetpassInterface::OUI("00:1f:32");
 
   StreetpassInterface::StreetpassInterface(PhysicalInterface const& phys, std::string const& name) {
     nl80211::wiface w = nl80211::commands::new_interface(nlsock, phys.get_id(), NL80211_IFTYPE_ADHOC, name, true);
@@ -42,9 +43,14 @@ namespace streetpass::iface {
       }
 
       Tins::Dot11ProbeRequest probereq(data.data(), data.size());
-      std::cout << "-- Found Probe Request --" << std::endl;
-      std::cout << probereq.ssid() << std::endl;
-      throw "STOP";
+      try {
+        if(probereq.ssid() == SSID && probereq.vendor_specific().oui == OUI) {
+          std::cout << "-- Found Streetpass Probe Request --" << std::endl;
+          throw "STOP";
+        }
+      } catch(Tins::option_not_found&) {
+        return;
+      }
     };
 
     scan_sock.recv_messages(handler, nullptr, true);
