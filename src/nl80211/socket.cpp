@@ -2,6 +2,7 @@
 #include "nl80211/message.hpp"
 
 #include "nl80211/error.hpp"
+#include <chrono>
 
 namespace streetpass::nl80211 {
 
@@ -86,7 +87,10 @@ namespace streetpass::nl80211 {
       throw NlError(err, "An error occured while receiving messages");
   }
 
-  void Socket::recv_messages(std::function<void(MessageParser&, void*)> callback, void* arg, bool disable_seq_check) {
+  void Socket::recv_messages(
+    std::function<void(MessageParser&, void*)> callback, void* arg,
+    bool disable_seq_check, unsigned int timeout)
+  {
     nl_cb* cb = nl_cb_alloc(NL_CB_DEFAULT);
     if(cb == nullptr)
       throw std::bad_alloc();
@@ -121,9 +125,15 @@ namespace streetpass::nl80211 {
       nl_cb_set(cb, NL_CB_SEQ_CHECK, NL_CB_CUSTOM, no_seq_check, nullptr);
     nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, valid_handler, &recv_msg_cb);
 
+    auto start = std::chrono::system_clock::now();
+    unsigned int elapsed_ms = 0;
     try {
-      while(err > 0)
+      do {
         nl_recvmsgs(m_nlsock.get(), cb);
+        auto now = std::chrono::system_clock::now();
+        elapsed_ms =
+          std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+      } while(err > 0 && (elapsed_ms < timeout || !timeout));
     } catch(...) {
       std::cerr << "Caught an exception while receiving netlink messages! "
       "Memory leak in sight... aborting." << std::endl;
