@@ -8,50 +8,50 @@
 
 namespace streetpass::iface {
 
-  Virtual::Virtual(std::uint32_t index) : m_index(index) {}
+  VirtualInterface::VirtualInterface(std::uint32_t index) : m_index(index) {}
 
-  nl80211::wiface Virtual::get_all_info(std::uint32_t index) {
+  nl80211::wiface VirtualInterface::get_all_info(std::uint32_t index) {
     nl80211::Socket nlsock;
     return nl80211::commands::get_interface(nlsock, index);
   }
 
-  std::array<std::uint8_t, 6> Virtual::get_mac_addr() const {
+  std::array<std::uint8_t, 6> VirtualInterface::get_mac_addr() const {
     return get_all_info(m_index).mac;
   }
 
-  std::string Virtual::get_name() const {
+  std::string VirtualInterface::get_name() const {
     return get_all_info(m_index).name;
   }
 
-  void Virtual::up() const {
+  void VirtualInterface::up() const {
     //TODO: exception handling?
     ioctl::Socket sock;
     ioctl::set_interface_up(sock, get_name());
   }
 
-  void Virtual::down() const {
+  void VirtualInterface::down() const {
     //TODO: exception handling?
     ioctl::Socket sock;
     ioctl::set_interface_down(sock, get_name());
   }
 
-  Physical::Physical(nl80211::wiphy wiphy) : m_index(wiphy.index),
+  PhysicalInterface::PhysicalInterface(nl80211::wiphy wiphy) : m_index(wiphy.index),
     m_supported_cmds(wiphy.supported_cmds),
     m_supported_iftypes(wiphy.supported_iftypes),
     m_supported_ciphers(wiphy.supported_ciphers) {}
 
-  Physical::Physical(std::uint32_t index) : Physical(get_all_info(index)) {}
+  PhysicalInterface::PhysicalInterface(std::uint32_t index) : PhysicalInterface(get_all_info(index)) {}
 
-  nl80211::wiphy Physical::get_all_info(std::uint32_t index) {
+  nl80211::wiphy PhysicalInterface::get_all_info(std::uint32_t index) {
     nl80211::Socket nlsock;
     return nl80211::commands::get_wiphy(nlsock, index);
   }
 
-  std::string Physical::get_name() const {
+  std::string PhysicalInterface::get_name() const {
     return get_all_info(m_index).name;
   }
 
-  Virtual Physical::setup_streetpass_interface(std::string const& name) const {
+  VirtualInterface PhysicalInterface::setup_streetpass_interface(std::string const& name) const {
     check_supported();
     auto virt_list = find_all_virtual();
     //TODO: exception handling
@@ -61,7 +61,7 @@ namespace streetpass::iface {
     //TODO: exception handling
     nl80211::Socket nlsock;
     nl80211::wiface w = nl80211::commands::new_interface(nlsock, m_index, NL80211_IFTYPE_ADHOC, name);
-    Virtual virt(w.index);
+    VirtualInterface virt(w.index);
     std::this_thread::sleep_for (std::chrono::seconds(1));
     virt.down();
     nl80211::commands::set_interface_mode(nlsock, virt.get_id(), NL80211_IFTYPE_ADHOC);
@@ -72,7 +72,7 @@ namespace streetpass::iface {
     return virt;
   }
 
-  bool Physical::is_supported() const noexcept {
+  bool PhysicalInterface::is_supported() const noexcept {
     try {
       check_supported();
     } catch(...) {
@@ -95,7 +95,7 @@ namespace streetpass::iface {
     constexpr std::uint32_t CIPHER_CCMP_128 = 0x000fac04;
   }
 
-  void Physical::check_supported() const {
+  void PhysicalInterface::check_supported() const {
     auto type_it = m_supported_iftypes.find(NL80211_IFTYPE_ADHOC);
     if(type_it == m_supported_iftypes.end())
       throw UnsupportedPhysicalInterface("Interface does not support adhoc mode");
@@ -111,30 +111,30 @@ namespace streetpass::iface {
       throw UnsupportedPhysicalInterface("Interface does not support AES-CCMP-128 cipher");
   }
 
-  std::vector<Virtual> Physical::find_all_virtual() const {
-    std::vector<Virtual> res;
+  std::vector<VirtualInterface> PhysicalInterface::find_all_virtual() const {
+    std::vector<VirtualInterface> res;
 
     nl80211::Socket nlsock;
     std::vector<nl80211::wiface> wifaces = nl80211::commands::get_interface_list(nlsock, m_index);
     std::transform(wifaces.begin(), wifaces.end(), std::back_inserter(res),
-      [](auto x) { return Virtual(x.index); });
+      [](auto x) { return VirtualInterface(x.index); });
 
     return res;
   }
 
-  std::vector<Physical> Physical::find_all() {
-    std::vector<Physical> res;
+  std::vector<PhysicalInterface> PhysicalInterface::find_all() {
+    std::vector<PhysicalInterface> res;
 
     nl80211::Socket nlsock;
     std::vector<nl80211::wiphy> wiphys = nl80211::commands::get_wiphy_list(nlsock);
     std::transform(wiphys.begin(), wiphys.end(), std::back_inserter(res),
-      [](auto x) { return Physical(x); });
+      [](auto x) { return PhysicalInterface(x); });
 
     return res;
   }
 
-  std::vector<Physical> Physical::find_all_supported() {
-    std::vector<Physical> res = find_all();
+  std::vector<PhysicalInterface> PhysicalInterface::find_all_supported() {
+    std::vector<PhysicalInterface> res = find_all();
     res.erase(std::remove_if(res.begin(), res.end(),
       [](auto x) { return !x.is_supported(); }), res.end());
 

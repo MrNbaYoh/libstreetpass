@@ -7,12 +7,12 @@
 
 namespace streetpass::iface {
 
-  class Virtual {
+  class VirtualInterface {
   private:
     std::uint32_t m_index;
 
-    Virtual(std::uint32_t index);
-    friend class Physical;
+    VirtualInterface(std::uint32_t index);
+    friend class PhysicalInterface;
     static nl80211::wiface get_all_info(std::uint32_t index);
   public:
     inline std::uint32_t get_id() const noexcept {
@@ -26,17 +26,17 @@ namespace streetpass::iface {
     void down() const;
   };
 
-  class Physical {
+  class PhysicalInterface {
   private:
     std::uint32_t m_index;
     std::unordered_set<std::uint32_t> m_supported_cmds;
     std::unordered_set<std::uint32_t> m_supported_iftypes;
     std::unordered_set<std::uint32_t> m_supported_ciphers;
 
-    Physical(nl80211::wiphy wiphy);
+    PhysicalInterface(nl80211::wiphy wiphy);
     static nl80211::wiphy get_all_info(std::uint32_t index);
   public:
-    Physical(std::uint32_t index);
+    PhysicalInterface(std::uint32_t index);
 
     inline std::uint32_t get_id() const noexcept {
       return m_index;
@@ -44,13 +44,13 @@ namespace streetpass::iface {
 
     std::string get_name() const;
 
-    std::vector<Virtual> find_all_virtual() const;
+    std::vector<VirtualInterface> find_all_virtual() const;
     bool is_supported() const noexcept;
     void check_supported() const;
-    Virtual setup_streetpass_interface(std::string const& name = "streetpass") const;
+    VirtualInterface setup_streetpass_interface(std::string const& name = "streetpass") const;
 
-    static std::vector<Physical> find_all();
-    static std::vector<Physical> find_all_supported();
+    static std::vector<PhysicalInterface> find_all();
+    static std::vector<PhysicalInterface> find_all_supported();
   };
 
 
