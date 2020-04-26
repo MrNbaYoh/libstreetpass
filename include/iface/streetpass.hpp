@@ -18,5 +18,6 @@ namespace streetpass::iface {
     StreetpassInterface(StreetpassInterface&&) = delete;
     StreetpassInterface& operator=(StreetpassInterface&&) = delete;
 
+    static const std::string SSID;
   };
 }
