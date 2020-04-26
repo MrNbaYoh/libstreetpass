@@ -6,25 +6,8 @@
 #include "nl80211/commands.hpp"
 
 namespace streetpass::iface {
-
-  class VirtualInterface {
-  private:
-    std::uint32_t m_index;
-
-    VirtualInterface(std::uint32_t index);
-    friend class PhysicalInterface;
-    static nl80211::wiface get_all_info(std::uint32_t index);
-  public:
-    inline std::uint32_t get_id() const noexcept {
-      return m_index;
-    }
-
-    std::array<std::uint8_t, 6> get_mac_addr() const;
-    std::string get_name() const;
-
-    void up() const;
-    void down() const;
-  };
+  class StreetpassInterface;
+  class VirtualInterface;
 
   class PhysicalInterface {
   private:
@@ -47,7 +30,7 @@ namespace streetpass::iface {
     std::vector<VirtualInterface> find_all_virtual() const;
     bool is_supported() const noexcept;
     void check_supported() const;
-    VirtualInterface setup_streetpass_interface(std::string const& name = "streetpass") const;
+    StreetpassInterface setup_streetpass_interface(std::string const& name = "streetpass") const;
 
     static std::vector<PhysicalInterface> find_all();
     static std::vector<PhysicalInterface> find_all_supported();

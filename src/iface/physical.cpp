@@ -1,39 +1,11 @@
-#include "iface/interface.hpp"
-#include "iface/ioctl.hpp"
+#include "iface/physical.hpp"
+#include "iface/streetpass.hpp"
+#include "iface/virtual.hpp"
 
 #include <algorithm>
 #include <iostream>
-#include <thread>
-#include <chrono>
 
 namespace streetpass::iface {
-
-  VirtualInterface::VirtualInterface(std::uint32_t index) : m_index(index) {}
-
-  nl80211::wiface VirtualInterface::get_all_info(std::uint32_t index) {
-    nl80211::Socket nlsock;
-    return nl80211::commands::get_interface(nlsock, index);
-  }
-
-  std::array<std::uint8_t, 6> VirtualInterface::get_mac_addr() const {
-    return get_all_info(m_index).mac;
-  }
-
-  std::string VirtualInterface::get_name() const {
-    return get_all_info(m_index).name;
-  }
-
-  void VirtualInterface::up() const {
-    //TODO: exception handling?
-    ioctl::Socket sock;
-    ioctl::set_interface_up(sock, get_name());
-  }
-
-  void VirtualInterface::down() const {
-    //TODO: exception handling?
-    ioctl::Socket sock;
-    ioctl::set_interface_down(sock, get_name());
-  }
 
   PhysicalInterface::PhysicalInterface(nl80211::wiphy wiphy) : m_index(wiphy.index),
     m_supported_cmds(wiphy.supported_cmds),
@@ -51,25 +23,15 @@ namespace streetpass::iface {
     return get_all_info(m_index).name;
   }
 
-  VirtualInterface PhysicalInterface::setup_streetpass_interface(std::string const& name) const {
+  StreetpassInterface PhysicalInterface::setup_streetpass_interface(std::string const& name) const {
     check_supported();
     auto virt_list = find_all_virtual();
     //TODO: exception handling
     for(auto virt: virt_list)
       virt.down();
 
-    //TODO: exception handling
-    nl80211::Socket nlsock;
-    nl80211::wiface w = nl80211::commands::new_interface(nlsock, m_index, NL80211_IFTYPE_ADHOC, name);
-    VirtualInterface virt(w.index);
-    std::this_thread::sleep_for (std::chrono::seconds(1));
-    virt.down();
-    nl80211::commands::set_interface_mode(nlsock, virt.get_id(), NL80211_IFTYPE_ADHOC);
-    std::this_thread::sleep_for (std::chrono::seconds(1));
-    virt.up();
-    nl80211::commands::join_ibss(nlsock, virt.get_id(), "Nintendo_3DS_continuous_scan_000", 2412, true, virt.get_mac_addr());
     //TODO: implement!
-    return virt;
+    return StreetpassInterface(*this, name);
   }
 
   bool PhysicalInterface::is_supported() const noexcept {
