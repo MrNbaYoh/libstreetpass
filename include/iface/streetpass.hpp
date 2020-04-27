@@ -19,7 +19,8 @@ namespace streetpass::iface {
     StreetpassInterface(StreetpassInterface&&) = delete;
     StreetpassInterface& operator=(StreetpassInterface&&) = delete;
 
-    void scan();
+    std::map<Tins::HWAddress<6>, std::vector<std::uint8_t>>
+    scan(unsigned int ms_duration);
 
     static const std::string SSID;
     static const Tins::HWAddress<3> OUI;

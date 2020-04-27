@@ -11,6 +11,7 @@ namespace streetpass::iface {
   const Tins::HWAddress<3> StreetpassInterface::OUI("00:1f:32");
 
   StreetpassInterface::StreetpassInterface(PhysicalInterface const& phys, std::string const& name) {
+    //TODO: handle exception
     nl80211::wiface w = nl80211::commands::new_interface(nlsock, phys.get_id(), NL80211_IFTYPE_ADHOC, name, true);
     std::this_thread::sleep_for (std::chrono::seconds(1));
     m_index = w.index;
@@ -28,17 +29,23 @@ namespace streetpass::iface {
     nl80211::commands::join_ibss(nlsock, m_index, SSID, 2412, true, w.mac);
   }
 
-  void StreetpassInterface::scan() {
+  std::map<Tins::HWAddress<6>, std::vector<std::uint8_t>>
+  StreetpassInterface::scan(unsigned int ms_duration) {
+    std::map<Tins::HWAddress<6>, std::vector<std::uint8_t>> results;
+    if(ms_duration == 0)
+      return results;
+
+    //TODO: handle exception
     nl80211::Socket scan_sock;
     nl80211::commands::register_frame(scan_sock, m_index,
       Tins::Dot11::Types::MANAGEMENT | (Tins::Dot11::ManagementSubtypes::PROBE_REQ << 4));
 
-    auto handler = [](nl80211::MessageParser& msg, void*) {
+    auto handler = [](nl80211::MessageParser& msg, void* arg) {
+      auto res = static_cast<decltype(results)*>(arg);
       std::vector<std::uint8_t> data;
       try {
         data = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_FRAME).value();
       } catch(...) {
-        std::cerr << "Not a probe request frame" << std::endl;
         return;
       }
 
@@ -46,13 +53,12 @@ namespace streetpass::iface {
       try {
         if(probereq.ssid() == SSID && probereq.vendor_specific().oui == OUI) {
           std::cout << "-- Found Streetpass Probe Request --" << std::endl;
-          throw "STOP";
+          res->emplace(probereq.addr2(), probereq.vendor_specific().data);
         }
-      } catch(Tins::option_not_found&) {
-        return;
-      }
+      } catch(Tins::option_not_found&) {}
     };
 
-    scan_sock.recv_messages(handler, nullptr, true);
+    scan_sock.recv_messages(handler, &results, true, ms_duration);
+    return results;
   }
 }
