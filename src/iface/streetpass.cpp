@@ -29,6 +29,18 @@ namespace streetpass::iface {
     nl80211::commands::join_ibss(nlsock, m_index, SSID, 2412, true, w.mac);
   }
 
+  namespace {
+    bool is_streetpass_scan_probereq(Tins::Dot11ProbeRequest const& probereq) {
+      try {
+        return probereq.vendor_specific().oui == StreetpassInterface::OUI &&
+          probereq.addr1().is_broadcast() &&
+          probereq.ssid() == StreetpassInterface::SSID;
+      } catch(Tins::option_not_found&) {
+        return false;
+      }
+    }
+  }
+
   std::map<Tins::HWAddress<6>, std::vector<std::uint8_t>>
   StreetpassInterface::scan(unsigned int ms_duration) {
     std::map<Tins::HWAddress<6>, std::vector<std::uint8_t>> results;
@@ -50,14 +62,11 @@ namespace streetpass::iface {
       }
 
       Tins::Dot11ProbeRequest probereq(data.data(), data.size());
-      try {
-        if(probereq.vendor_specific().oui == OUI &&
-          probereq.addr1().is_broadcast() && probereq.ssid() == SSID) 
-        {
-          std::cout << "-- Found Streetpass Probe Request --" << std::endl;
-          res->emplace(probereq.addr2(), probereq.vendor_specific().data);
-        }
-      } catch(Tins::option_not_found&) {}
+      if(is_streetpass_scan_probereq(probereq))
+      {
+        std::cout << "-- Found Streetpass Probe Request --" << std::endl;
+        res->emplace(probereq.addr2(), probereq.vendor_specific().data);
+      }
     };
 
     scan_sock.recv_messages(handler, &results, true, ms_duration);
