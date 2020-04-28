@@ -90,6 +90,22 @@ namespace streetpass::nl80211::commands {
     nlsock.recv_messages();
   }
 
+  void send_frame(Socket& nlsock, std::uint32_t if_idx, std::uint32_t freq,
+    std::vector<uint8_t> const& data, std::uint32_t duration, bool wait_ack)
+  {
+    Message msg (NL80211_CMD_FRAME, nlsock.get_driver_id());
+    msg.put(NL80211_ATTR_IFINDEX, if_idx);
+    msg.put(NL80211_ATTR_WIPHY_FREQ, freq);
+    msg.put(NL80211_ATTR_FRAME, data);
+    if(duration != 0)
+      msg.put(NL80211_ATTR_DURATION, duration);
+    if(!wait_ack)
+      msg.put(NL80211_ATTR_DONT_WAIT_FOR_ACK);
+
+    nlsock.send_message(msg);
+    nlsock.recv_messages();
+  }
+
   void join_ibss(Socket& nlsock, std::uint32_t if_idx, std::string const& ssid,
     std::uint32_t freq, bool fixed_freq, std::array<std::uint8_t, 6> const& bssid)
   {
