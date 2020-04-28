@@ -51,7 +51,9 @@ namespace streetpass::iface {
 
       Tins::Dot11ProbeRequest probereq(data.data(), data.size());
       try {
-        if(probereq.ssid() == SSID && probereq.vendor_specific().oui == OUI) {
+        if(probereq.vendor_specific().oui == OUI &&
+          probereq.addr1().is_broadcast() && probereq.ssid() == SSID) 
+        {
           std::cout << "-- Found Streetpass Probe Request --" << std::endl;
           res->emplace(probereq.addr2(), probereq.vendor_specific().data);
         }
