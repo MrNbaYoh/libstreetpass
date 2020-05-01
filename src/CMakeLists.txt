@@ -7,6 +7,7 @@ include(ClangFormat)
 add_subdirectory(nl80211)
 add_subdirectory(crypto)
 add_subdirectory(iface)
+add_subdirectory(cec)
 
 ###################
 ## Build targets ##
@@ -20,6 +21,6 @@ target_sources(Streetpass
     )
 
 target_include_directories(Streetpass PRIVATE ${CMAKE_SOURCE_DIR}/externals/libtins/include)
-target_link_libraries(Streetpass PRIVATE tins streetpass::nl80211 streetpass::crypto streetpass::iface)
+target_link_libraries(Streetpass PRIVATE tins streetpass::nl80211 streetpass::crypto streetpass::iface streetpass::cec)
 
 target_clangformat_setup(Streetpass)
