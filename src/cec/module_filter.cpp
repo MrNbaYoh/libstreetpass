@@ -8,6 +8,24 @@ using Tins::Memory::InputMemoryStream;
 using Tins::Memory::OutputMemoryStream;
 
 namespace streetpass::cec {
+  const char* filter_list_marker_to_string(filter_list_marker_t marker) {
+    switch(marker) {
+      case filter_list_marker_t::TITLE_FILTER : return "TITLE_FILTER";
+      case filter_list_marker_t::KEY_FILTER   : return "KEY_FILTER";
+      default                                 : return "invalid";
+    }
+  }
+
+  const char* send_mode_to_string(send_mode_t mode) {
+    switch(mode) {
+      case send_mode_t::EXCHANGE  : return "EXCHANGE";
+      case send_mode_t::RECV_ONLY : return "RECV_ONLY";
+      case send_mode_t::SEND_ONLY : return "SEND_ONLY";
+      case send_mode_t::SEND_RECV : return "SEND_RECV";
+      default                     : return "invalid";
+    }
+  }
+
   ModuleFilter::ModuleFilter(InputMemoryStream& stream) {
     parse(stream);
   }
@@ -143,7 +161,8 @@ namespace streetpass::cec {
     std::stringstream ss;
     ss << "Title: ";
     ss <<"id=" << std::hex << std::setfill('0') << std::setw(8) << e.title_id()
-      << ", send_mode=" << std::setw(2) << static_cast<unsigned>(e.send_mode());
+       << ", send_mode=" << std::setw(2) << static_cast<unsigned>(e.send_mode())
+       << "(" << send_mode_to_string(e.send_mode()) << ")";
     if(e.m_mve_list.size()) {
       ss << ", mve_list=";
       //TODO: better printer for MVE list
@@ -299,7 +318,8 @@ namespace streetpass::cec {
     std::stringstream ss;
     ss << "FilterList: ";
     ss << std::hex << std::setfill('0');
-    ss << "marker=" << std::setw(2) << static_cast<unsigned>(l.marker()) << ", ";
+    ss << "marker=" << std::setw(2) << static_cast<unsigned>(l.marker()) << "("
+       << filter_list_marker_to_string(l.marker()) << "), ";
     ss << "flags=" << std::setw(2) << static_cast<unsigned>(l.flags()) << ", ";
     ss << "length=" << std::setw(2) << static_cast<unsigned>(l.m_internal.length) << std::endl;
     ss << "Content:";
