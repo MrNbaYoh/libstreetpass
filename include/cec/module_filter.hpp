@@ -58,7 +58,7 @@ namespace streetpass::cec {
     private:
       void parse(InputMemoryStream& stream);
 
-      struct title_element {
+      struct title_filter_header {
         uint32_t title_id;  // this one is big endian
         #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ //bitfield layout depends on endianness
         uint8_t extra_triplet: 4;   // number of extra triplet of bytes
@@ -69,7 +69,7 @@ namespace streetpass::cec {
         #endif
       } __attribute__((__packed__));
 
-      title_element m_internal;
+      title_filter_header m_internal;
       bytes m_extra_data;
     };
 
