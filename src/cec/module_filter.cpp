@@ -21,32 +21,32 @@ namespace streetpass::cec {
     ModuleFilter(buffer.data(), buffer.size()) {}
 
   bytes ModuleFilter::to_bytes() const {
-    bytes buffer(m_title_list.total_size() + m_cid_list.total_size());
+    bytes buffer(m_title_list.total_size() + m_key_list.total_size());
     OutputMemoryStream stream(buffer);
     bytes tl_bytes = m_title_list.to_bytes();
     stream.write(tl_bytes.data(), tl_bytes.size());
-    bytes cl_bytes = m_cid_list.to_bytes();
+    bytes cl_bytes = m_key_list.to_bytes();
     stream.write(cl_bytes.data(), cl_bytes.size());
     return buffer;
   }
 
   void ModuleFilter::parse(InputMemoryStream& stream) {
     bool found_title_list = false;
-    bool found_cid_list = false;
+    bool found_key_list = false;
 
-    while(stream.can_read(sizeof(list_header))) {
-      const list_header* header =
-        reinterpret_cast<const list_header*>(stream.pointer());
-      if(header->marker == list_marker_t::TITLE_LIST) {
+    while(stream.can_read(sizeof(filter_list_header))) {
+      const filter_list_header* header =
+        reinterpret_cast<const filter_list_header*>(stream.pointer());
+      if(header->marker == filter_list_marker_t::TITLE_FILTER) {
         if(found_title_list)
           throw "bad - already found title list";
-        m_title_list = List<TitleElement>(stream);
-      } else if(header->marker == list_marker_t::CONSOLE_ID) {
-        if(found_cid_list)
-          throw "bad - already found cid list";
-        m_cid_list = List<ConsoleIdElement>(stream);
-        if(m_cid_list.count() != 1)
-          throw "bad - cid list count != 1";
+        m_title_list = FilterList<TitleFilter>(stream);
+      } else if(header->marker == filter_list_marker_t::KEY_FILTER) {
+        if(found_key_list)
+          throw "bad - already found key list";
+        m_key_list = FilterList<KeyFilter>(stream);
+        if(m_key_list.count() != 1)
+          throw "bad - key list count != 1";
       } else {
         std::cerr << std::hex << (int)header->flags << std::endl;
         throw "bad marker";
@@ -58,32 +58,32 @@ namespace streetpass::cec {
     s << "================================ Module Filter =================================" << std::endl;
     s << e.m_title_list << std::endl;
     s << "--------------------------------------------------------------------------------" << std::endl;
-    s << e.m_cid_list << std::endl;
+    s << e.m_key_list << std::endl;
     s << "================================================================================";
     return s;
   }
 
-  ModuleFilter::TitleElement::TitleElement(InputMemoryStream& stream) {
+  ModuleFilter::TitleFilter::TitleFilter(InputMemoryStream& stream) {
     parse(stream);
   }
 
-  ModuleFilter::TitleElement::TitleElement(const uint8_t* buffer, uint32_t size) {
+  ModuleFilter::TitleFilter::TitleFilter(const uint8_t* buffer, uint32_t size) {
     InputMemoryStream stream(buffer, size);
     parse(stream);
   }
 
-  ModuleFilter::TitleElement::TitleElement(bytes const& buffer) :
-    TitleElement(buffer.data(), buffer.size()) {}
+  ModuleFilter::TitleFilter::TitleFilter(bytes const& buffer) :
+    TitleFilter(buffer.data(), buffer.size()) {}
 
-  ModuleFilter::TitleElement::TitleElement(tid_type tid, send_mode_t mode, bytes const& data) {
+  ModuleFilter::TitleFilter::TitleFilter(tid_type tid, send_mode_t mode, bytes const& data) {
     title_id(tid);
     send_mode(mode);
     extra_data(data);
   }
 
-  void ModuleFilter::TitleElement::parse(InputMemoryStream& stream) {
+  void ModuleFilter::TitleFilter::parse(InputMemoryStream& stream) {
     if(!stream.can_read(sizeof(m_internal)))
-      throw "bad title element";
+      throw "bad title filter";
     stream.read(&m_internal, sizeof(m_internal));
     uint8_t extra_size = m_internal.extra_triplet*3;
     if(extra_size)
@@ -94,27 +94,27 @@ namespace streetpass::cec {
     }
   }
 
-  tid_type ModuleFilter::TitleElement::title_id() const {
+  tid_type ModuleFilter::TitleFilter::title_id() const {
     return Endian::be_to_host(m_internal.title_id);
   }
 
-  void ModuleFilter::TitleElement::title_id(tid_type tid) {
+  void ModuleFilter::TitleFilter::title_id(tid_type tid) {
     m_internal.title_id = Endian::host_to_be(tid);
   }
 
-  send_mode_t ModuleFilter::TitleElement::send_mode() const {
+  send_mode_t ModuleFilter::TitleFilter::send_mode() const {
     return m_internal.send_mode;
   }
 
-  void ModuleFilter::TitleElement::send_mode(send_mode_t mode) {
+  void ModuleFilter::TitleFilter::send_mode(send_mode_t mode) {
     m_internal.send_mode = mode;
   }
 
-  bytes ModuleFilter::TitleElement::extra_data() const {
+  bytes ModuleFilter::TitleFilter::extra_data() const {
     return m_extra_data;
   }
 
-  void ModuleFilter::TitleElement::extra_data(bytes const& data) {
+  void ModuleFilter::TitleFilter::extra_data(bytes const& data) {
     unsigned aligned_size = ((data.size() + 2) / 3) * 3;
     unsigned triplet_count = aligned_size/3;
     if(triplet_count > 0xF)
@@ -127,11 +127,11 @@ namespace streetpass::cec {
     m_internal.extra_triplet = m_extra_data.size()/3;
   }
 
-  unsigned ModuleFilter::TitleElement::total_size() const {
+  unsigned ModuleFilter::TitleFilter::total_size() const {
     return sizeof(m_internal) + m_extra_data.size();
   }
 
-  bytes ModuleFilter::TitleElement::to_bytes() const {
+  bytes ModuleFilter::TitleFilter::to_bytes() const {
     bytes buffer(sizeof(m_internal) + m_extra_data.size());
     OutputMemoryStream stream(buffer);
     stream.write(m_internal);
@@ -139,7 +139,7 @@ namespace streetpass::cec {
     return buffer;
   }
 
-  std::ostream& operator<<(std::ostream& s, const ModuleFilter::TitleElement& e) {
+  std::ostream& operator<<(std::ostream& s, const ModuleFilter::TitleFilter& e) {
     std::stringstream ss;
     ss << "Title: ";
     ss <<"id=" << std::hex << std::setfill('0') << std::setw(8) << e.title_id()
@@ -154,54 +154,54 @@ namespace streetpass::cec {
     return s;
   }
 
-  ModuleFilter::ConsoleIdElement::ConsoleIdElement(InputMemoryStream& stream) {
+  ModuleFilter::KeyFilter::KeyFilter(InputMemoryStream& stream) {
     parse(stream);
   }
 
-  ModuleFilter::ConsoleIdElement::ConsoleIdElement(const uint8_t* buffer, uint32_t size) {
+  ModuleFilter::KeyFilter::KeyFilter(const uint8_t* buffer, uint32_t size) {
     InputMemoryStream stream(buffer, size);
     parse(stream);
   }
 
-  ModuleFilter::ConsoleIdElement::ConsoleIdElement(bytes const& buffer) :
-    ConsoleIdElement(buffer.data(), buffer.size()) {}
+  ModuleFilter::KeyFilter::KeyFilter(bytes const& buffer) :
+    KeyFilter(buffer.data(), buffer.size()) {}
 
-  ModuleFilter::ConsoleIdElement::ConsoleIdElement(cid_type const& cid) {
-    console_id(cid);
+  ModuleFilter::KeyFilter::KeyFilter(key_type const& k) {
+    key(k);
   }
 
-  void ModuleFilter::ConsoleIdElement::parse(InputMemoryStream& stream) {
+  void ModuleFilter::KeyFilter::parse(InputMemoryStream& stream) {
     if(!stream.can_read(sizeof(m_internal)))
-      throw "bad console id element";
+      throw "bad key filter";
     stream.read(&m_internal, sizeof(m_internal));
   }
 
-  cid_type ModuleFilter::ConsoleIdElement::console_id() const {
-    cid_type cid;
-    std::copy(std::begin(m_internal.console_id), std::end(m_internal.console_id), cid.begin());
-    return cid;
+  key_type ModuleFilter::KeyFilter::key() const {
+    key_type key;
+    std::copy(std::begin(m_internal.key), std::end(m_internal.key), key.begin());
+    return key;
   }
 
-  void ModuleFilter::ConsoleIdElement::console_id(cid_type const& cid) {
-    std::memcpy(m_internal.console_id, cid.data(), sizeof(m_internal.console_id));
+  void ModuleFilter::KeyFilter::key(key_type const& k) {
+    std::memcpy(m_internal.key, k.data(), sizeof(m_internal.key));
   }
 
-  unsigned ModuleFilter::ConsoleIdElement::total_size() const {
+  unsigned ModuleFilter::KeyFilter::total_size() const {
     return sizeof(m_internal);
   }
 
-  bytes ModuleFilter::ConsoleIdElement::to_bytes() const {
+  bytes ModuleFilter::KeyFilter::to_bytes() const {
     bytes buffer(sizeof(m_internal));
     OutputMemoryStream stream(buffer);
     stream.write(m_internal);
     return buffer;
   }
 
-  std::ostream& operator<<(std::ostream& s, const ModuleFilter::ConsoleIdElement& e) {
+  std::ostream& operator<<(std::ostream& s, const ModuleFilter::KeyFilter& e) {
     std::stringstream ss;
-    ss << "cid=";
+    ss << "key=";
     ss << std::hex << std::setfill('0') << std::setw(2);
-    for(unsigned b: e.m_internal.console_id)
+    for(unsigned b: e.m_internal.key)
       ss << std::setw(2) << b;
 
     s << ss.str();
@@ -209,27 +209,27 @@ namespace streetpass::cec {
   }
 
   template<class T>
-  ModuleFilter::List<T>::List(InputMemoryStream& stream) {
+  ModuleFilter::FilterList<T>::FilterList(InputMemoryStream& stream) {
     parse(stream);
   }
 
   template<class T>
-  ModuleFilter::List<T>::List(const uint8_t* buffer, uint32_t size) {
+  ModuleFilter::FilterList<T>::FilterList(const uint8_t* buffer, uint32_t size) {
     InputMemoryStream stream(buffer, size);
     parse(stream);
   }
 
   template<class T>
-  ModuleFilter::List<T>::List() : m_internal{} {
+  ModuleFilter::FilterList<T>::FilterList() : m_internal{} {
     marker(MARKER);
   }
 
   template<class T>
-  ModuleFilter::List<T>::List(bytes const& buffer) :
-    List<T>(buffer.data(), buffer.size()) {}
+  ModuleFilter::FilterList<T>::FilterList(bytes const& buffer) :
+    FilterList<T>(buffer.data(), buffer.size()) {}
 
   template<class T>
-  void ModuleFilter::List<T>::parse(InputMemoryStream& stream) {
+  void ModuleFilter::FilterList<T>::parse(InputMemoryStream& stream) {
     if(!stream.can_read(sizeof(m_internal)))
       throw "bad list header";
     stream.read(&m_internal, sizeof(m_internal));
@@ -247,27 +247,27 @@ namespace streetpass::cec {
   }
 
   template<class T>
-  list_marker_t ModuleFilter::List<T>::marker() const {
+  filter_list_marker_t ModuleFilter::FilterList<T>::marker() const {
     return m_internal.marker;
   }
 
   template<class T>
-  void ModuleFilter::List<T>::marker(list_marker_t marker) {
+  void ModuleFilter::FilterList<T>::marker(filter_list_marker_t marker) {
     m_internal.marker = marker;
   }
 
   template<class T>
-  small_uint<4> ModuleFilter::List<T>::flags() const {
+  small_uint<4> ModuleFilter::FilterList<T>::flags() const {
     return m_internal.flags;
   }
 
   template<class T>
-  void ModuleFilter::List<T>::flags(small_uint<4> flags) {
+  void ModuleFilter::FilterList<T>::flags(small_uint<4> flags) {
     m_internal.flags = flags;
   }
 
   template<class T>
-  unsigned ModuleFilter::List<T>::total_size() const {
+  unsigned ModuleFilter::FilterList<T>::total_size() const {
     unsigned size = sizeof(m_internal);
     for(T const& e: m_list)
       size += e.total_size();
@@ -275,12 +275,12 @@ namespace streetpass::cec {
   }
 
   template<class T>
-  unsigned ModuleFilter::List<T>::count() const {
+  unsigned ModuleFilter::FilterList<T>::count() const {
     return m_list.size();
   }
 
   template<class T>
-  bytes ModuleFilter::List<T>::to_bytes() const {
+  bytes ModuleFilter::FilterList<T>::to_bytes() const {
     bytes buffer(sizeof(m_internal) + m_internal.length);
     OutputMemoryStream stream(buffer);
     stream.write(m_internal);
@@ -293,10 +293,10 @@ namespace streetpass::cec {
 
   template<typename E>
   std::ostream& operator<<(std::ostream& s,
-    const ModuleFilter::List<E>& l)
+    const ModuleFilter::FilterList<E>& l)
   {
     std::stringstream ss;
-    ss << "List: ";
+    ss << "FilterList: ";
     ss << std::hex << std::setfill('0');
     ss << "marker=" << std::setw(2) << static_cast<unsigned>(l.marker()) << ", ";
     ss << "flags=" << std::setw(2) << static_cast<unsigned>(l.flags()) << ", ";
@@ -309,12 +309,12 @@ namespace streetpass::cec {
   }
 
   template<>
-  const list_marker_t ModuleFilter::List<ModuleFilter::TitleElement>::MARKER =
-    list_marker_t::TITLE_LIST;
+  const filter_list_marker_t ModuleFilter::FilterList<ModuleFilter::TitleFilter>::MARKER =
+    filter_list_marker_t::TITLE_FILTER;
   template<>
-  const list_marker_t ModuleFilter::List<ModuleFilter::ConsoleIdElement>::MARKER =
-    list_marker_t::CONSOLE_ID;
+  const filter_list_marker_t ModuleFilter::FilterList<ModuleFilter::KeyFilter>::MARKER =
+    filter_list_marker_t::KEY_FILTER;
 
-  template class ModuleFilter::List<ModuleFilter::TitleElement>;
-  template class ModuleFilter::List<ModuleFilter::ConsoleIdElement>;
+  template class ModuleFilter::FilterList<ModuleFilter::TitleFilter>;
+  template class ModuleFilter::FilterList<ModuleFilter::KeyFilter>;
 }

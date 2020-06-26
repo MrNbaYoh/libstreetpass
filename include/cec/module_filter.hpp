@@ -12,9 +12,9 @@ using Tins::small_uint;
 using Tins::Memory::InputMemoryStream;
 
 namespace streetpass::cec {
-  enum class list_marker_t : uint8_t {
-    TITLE_LIST = 0x1,
-    CONSOLE_ID = 0xF
+  enum class filter_list_marker_t : uint8_t {
+    TITLE_FILTER = 0x1,
+    KEY_FILTER = 0xF
   };
 
   enum class send_mode_t : uint8_t {
@@ -33,17 +33,17 @@ namespace streetpass::cec {
     bytes to_bytes() const;
     friend std::ostream& operator<<(std::ostream& s, const ModuleFilter& l);
 
-    class ListElement : public ICecFormat {
+    class Filter : public ICecFormat {
     public:
       virtual unsigned total_size() const = 0;
     };
 
-    class TitleElement : public ListElement {
+    class TitleFilter : public Filter {
     public:
-      TitleElement(InputMemoryStream& stream);
-      TitleElement(const uint8_t* buffer, uint32_t size);
-      TitleElement(bytes const& buffer);
-      TitleElement(tid_type tid, send_mode_t mode, bytes const& data);
+      TitleFilter(InputMemoryStream& stream);
+      TitleFilter(const uint8_t* buffer, uint32_t size);
+      TitleFilter(bytes const& buffer);
+      TitleFilter(tid_type tid, send_mode_t mode, bytes const& data);
 
       tid_type title_id() const;
       void title_id(tid_type tid);
@@ -54,7 +54,7 @@ namespace streetpass::cec {
 
       unsigned total_size() const;
       bytes to_bytes() const;
-      friend std::ostream& operator<<(std::ostream& s, const TitleElement& e);
+      friend std::ostream& operator<<(std::ostream& s, const TitleFilter& e);
     private:
       void parse(InputMemoryStream& stream);
 
@@ -73,53 +73,53 @@ namespace streetpass::cec {
       bytes m_extra_data;
     };
 
-    class ConsoleIdElement : public ListElement {
+    class KeyFilter : public Filter {
     public:
-      ConsoleIdElement(InputMemoryStream& stream);
-      ConsoleIdElement(const uint8_t* buffer, uint32_t size);
-      ConsoleIdElement(bytes const& buffer);
-      ConsoleIdElement(cid_type const& cid);
+      KeyFilter(InputMemoryStream& stream);
+      KeyFilter(const uint8_t* buffer, uint32_t size);
+      KeyFilter(bytes const& buffer);
+      KeyFilter(key_type const& k);
 
-      cid_type console_id() const;
-      void console_id(cid_type const& cid);
+      key_type key() const;
+      void key(key_type const& k);
 
       unsigned total_size() const;
       bytes to_bytes() const;
-      friend std::ostream& operator<<(std::ostream& s, const ConsoleIdElement& e);
+      friend std::ostream& operator<<(std::ostream& s, const KeyFilter& e);
     private:
       void parse(InputMemoryStream&);
 
-      struct cid_element {
-        uint8_t console_id[8];
+      struct key_filter {
+        uint8_t key[8];
       } __attribute__((__packed__));
 
-      cid_element m_internal;
+      key_filter m_internal;
     };
 
-    struct list_header
+    struct filter_list_header
     {
       #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ //bitfield layout depends on endianness
       uint8_t flags: 4;
-      list_marker_t marker: 4;
+      filter_list_marker_t marker: 4;
       #else
-      list_marker_t marker: 4;
+      filter_list_marker_t marker: 4;
       uint8_t flags: 4;
       #endif
       uint8_t length;
     } __attribute__((__packed__));
 
     template<class T>
-    class List : public ICecFormat {
-      static_assert(std::is_base_of<ListElement, T>::value, "T should inherit from ListElement");
+    class FilterList : public ICecFormat {
+      static_assert(std::is_base_of<Filter, T>::value, "T should inherit from Filter");
     public:
-      static const list_marker_t MARKER;
-      List(InputMemoryStream& stream);
-      List(const uint8_t* buffer, uint32_t size);
-      List(bytes const& buffer);
-      List();
+      static const filter_list_marker_t MARKER;
+      FilterList(InputMemoryStream& stream);
+      FilterList(const uint8_t* buffer, uint32_t size);
+      FilterList(bytes const& buffer);
+      FilterList();
 
-      list_marker_t marker() const;
-      void marker(list_marker_t marker);
+      filter_list_marker_t marker() const;
+      void marker(filter_list_marker_t marker);
       small_uint<4> flags() const;
       void flags(small_uint<4> flags);
 
@@ -128,17 +128,17 @@ namespace streetpass::cec {
       bytes to_bytes() const;
 
       template<class E>
-      friend std::ostream& operator<<(std::ostream& s, const List<E>& l);
+      friend std::ostream& operator<<(std::ostream& s, const FilterList<E>& l);
     private:
       void parse(InputMemoryStream& stream);
 
-      list_header m_internal;
+      filter_list_header m_internal;
       std::vector<T> m_list;
     };
 
   private:
     void parse(InputMemoryStream& stream);
-    List<TitleElement> m_title_list;
-    List<ConsoleIdElement> m_cid_list;
+    FilterList<TitleFilter> m_title_list;
+    FilterList<KeyFilter> m_key_list;
   };
 }
