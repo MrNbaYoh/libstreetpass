@@ -103,7 +103,11 @@ namespace streetpass::cec {
   void ModuleFilter::TitleFilter::parse(InputMemoryStream& stream) {
     if(!stream.can_read(sizeof(m_internal)))
       throw "bad title filter";
+      
     stream.read(&m_internal, sizeof(m_internal));
+    if(m_internal.send_mode > send_mode_t::SEND_RECV)
+      throw "bad send mode";
+
     uint8_t mve_count = m_internal.number_mve;
     if(mve_count)
     {
