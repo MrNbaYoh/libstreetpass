@@ -48,6 +48,8 @@ namespace streetpass::cec {
         if(m_key_list.count() != 1)
           throw "bad - key list count != 1";
       } else {
+        std::cerr << m_title_list.count() << std::endl;
+        std::cerr << std::hex << (int)header->marker<< std::endl;
         std::cerr << std::hex << (int)header->flags << std::endl;
         throw "bad marker";
       }
@@ -75,22 +77,23 @@ namespace streetpass::cec {
   ModuleFilter::TitleFilter::TitleFilter(bytes const& buffer) :
     TitleFilter(buffer.data(), buffer.size()) {}
 
-  ModuleFilter::TitleFilter::TitleFilter(tid_type tid, send_mode_t mode, bytes const& data) {
+  ModuleFilter::TitleFilter::TitleFilter(tid_type tid, send_mode_t mode) {
     title_id(tid);
     send_mode(mode);
-    extra_data(data);
   }
 
   void ModuleFilter::TitleFilter::parse(InputMemoryStream& stream) {
     if(!stream.can_read(sizeof(m_internal)))
       throw "bad title filter";
     stream.read(&m_internal, sizeof(m_internal));
-    uint8_t extra_size = m_internal.extra_triplet*3;
-    if(extra_size)
+    uint8_t mve_count = m_internal.number_mve;
+    if(mve_count)
     {
-      if(!stream.can_read(extra_size))
-        throw "bad read extra data";
-      stream.read(m_extra_data, extra_size);
+      unsigned mve_byte_size = mve_count * sizeof(ModuleFilter::TitleFilter::title_filter_mve);
+      if(!stream.can_read(mve_byte_size))
+        throw "bad read mve";
+      m_mve_list.resize(mve_count);
+      stream.read(m_mve_list.data(), mve_byte_size);
     }
   }
 
@@ -110,32 +113,29 @@ namespace streetpass::cec {
     m_internal.send_mode = mode;
   }
 
-  bytes ModuleFilter::TitleFilter::extra_data() const {
-    return m_extra_data;
+  std::vector<ModuleFilter::TitleFilter::title_filter_mve> ModuleFilter::TitleFilter::mve_list() const {
+    return m_mve_list;
   }
 
-  void ModuleFilter::TitleFilter::extra_data(bytes const& data) {
-    unsigned aligned_size = ((data.size() + 2) / 3) * 3;
-    unsigned triplet_count = aligned_size/3;
-    if(triplet_count > 0xF)
-      throw std::length_error("Extra data length cannot exceed 0x2D bytes");
+  void ModuleFilter::TitleFilter::mve_list(std::vector<ModuleFilter::TitleFilter::title_filter_mve> const& mve_list) {
+    if(mve_list.size() > 0xF)
+      throw std::length_error("MVE list size cannot exceed 15");
 
-    m_extra_data = data;
-    if(aligned_size - data.size())
-      m_extra_data.insert(m_extra_data.end(), aligned_size - data.size(), 0);
-
-    m_internal.extra_triplet = m_extra_data.size()/3;
+    m_mve_list = mve_list;
+    m_internal.number_mve = mve_list.size();
   }
 
   unsigned ModuleFilter::TitleFilter::total_size() const {
-    return sizeof(m_internal) + m_extra_data.size();
+    return sizeof(m_internal) + m_mve_list.size() * sizeof(ModuleFilter::TitleFilter::title_filter_mve);
   }
 
   bytes ModuleFilter::TitleFilter::to_bytes() const {
-    bytes buffer(sizeof(m_internal) + m_extra_data.size());
+    bytes buffer(sizeof(m_internal) + m_mve_list.size() * sizeof(ModuleFilter::TitleFilter::title_filter_mve));
     OutputMemoryStream stream(buffer);
     stream.write(m_internal);
-    stream.write(m_extra_data.data(), m_extra_data.size());
+
+    auto mve_bytes = reinterpret_cast<const uint8_t*>(m_mve_list.data());
+    stream.write(mve_bytes, m_mve_list.size() * sizeof(ModuleFilter::TitleFilter::title_filter_mve));
     return buffer;
   }
 
@@ -144,10 +144,11 @@ namespace streetpass::cec {
     ss << "Title: ";
     ss <<"id=" << std::hex << std::setfill('0') << std::setw(8) << e.title_id()
       << ", send_mode=" << std::setw(2) << static_cast<unsigned>(e.send_mode());
-    if(e.m_extra_data.size()) {
-      ss << ", extra_data=";
-      for(unsigned b: e.m_extra_data)
-        ss << std::setw(2) << b;
+    if(e.m_mve_list.size()) {
+      ss << ", mve_list=";
+      //TODO: better printer for MVE list
+      for(ModuleFilter::TitleFilter::title_filter_mve const& mve: e.m_mve_list)
+        ss << std::setw(2) << (int)mve.mask << " " << (int)mve.value << " " << (int)mve.expected;
     }
 
     s << ss.str();

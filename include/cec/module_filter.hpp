@@ -40,17 +40,23 @@ namespace streetpass::cec {
 
     class TitleFilter : public Filter {
     public:
+      struct title_filter_mve {
+        uint8_t mask;
+        uint8_t value;
+        uint8_t expected;
+      } __attribute__((__packed__));
+
       TitleFilter(InputMemoryStream& stream);
       TitleFilter(const uint8_t* buffer, uint32_t size);
       TitleFilter(bytes const& buffer);
-      TitleFilter(tid_type tid, send_mode_t mode, bytes const& data);
+      TitleFilter(tid_type tid, send_mode_t mode);
 
       tid_type title_id() const;
       void title_id(tid_type tid);
       send_mode_t send_mode() const;
       void send_mode(send_mode_t mode);
-      bytes extra_data() const;
-      void extra_data(bytes const& data);
+      std::vector<title_filter_mve> mve_list() const;
+      void mve_list(std::vector<title_filter_mve> const& mve_list);
 
       unsigned total_size() const;
       bytes to_bytes() const;
@@ -61,16 +67,16 @@ namespace streetpass::cec {
       struct title_filter_header {
         uint32_t title_id;  // this one is big endian
         #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ //bitfield layout depends on endianness
-        uint8_t extra_triplet: 4;   // number of extra triplet of bytes
+        uint8_t number_mve: 4;   // number of mve in mve_list
         send_mode_t send_mode: 4;
         #else
         send_mode_t send_mode: 4;
-        uint8_t extra_triplet: 4;
+        uint8_t number_mve: 4;
         #endif
       } __attribute__((__packed__));
 
       title_filter_header m_internal;
-      bytes m_extra_data;
+      std::vector<title_filter_mve> m_mve_list;
     };
 
     class KeyFilter : public Filter {
