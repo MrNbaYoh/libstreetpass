@@ -13,6 +13,7 @@ using Tins::Memory::InputMemoryStream;
 
 namespace streetpass::cec {
   enum class filter_list_marker_t : uint8_t {
+    RAW_BYTES_FILTER = 0x0,
     TITLE_FILTER = 0x1,
     KEY_FILTER = 0xF
   };
@@ -26,9 +27,9 @@ namespace streetpass::cec {
 
   class ModuleFilter : public ICecFormat {
   public:
-    ModuleFilter(InputMemoryStream& stream);
-    ModuleFilter(const uint8_t* buffer, uint32_t size);
-    ModuleFilter(bytes const& buffer);
+    static ModuleFilter from_bytes(InputMemoryStream& stream);
+    static ModuleFilter from_bytes(const uint8_t* buffer, uint32_t size);
+    static ModuleFilter from_bytes(bytes const& buffer);
 
     bytes to_bytes() const;
     friend std::ostream& operator<<(std::ostream& s, const ModuleFilter& l);
@@ -38,13 +39,40 @@ namespace streetpass::cec {
       virtual unsigned total_size() const = 0;
     };
 
+    class RawBytesFilter : public Filter {
+    public:
+      static RawBytesFilter from_bytes(InputMemoryStream& stream);
+      static RawBytesFilter from_bytes(const uint8_t* buffer, uint32_t size);
+      static RawBytesFilter from_bytes(bytes const& buffer);
+
+      RawBytesFilter(bytes const& raw_bytes);
+
+      bytes raw_bytes() const;
+      void raw_bytes(bytes const& raw_bytes);
+
+      unsigned total_size() const;
+      bytes to_bytes() const;
+      friend std::ostream& operator<<(std::ostream& s, const RawBytesFilter& f);
+
+    private:
+      RawBytesFilter() = default;
+
+      struct raw_filter {
+        uint8_t cmp_length;
+        uint8_t raw_bytes[16];
+      };
+
+      raw_filter m_internal;
+    };
+
     class TitleFilter : public Filter {
     public:
       class MVE : public ICecFormat {
       public:
-        MVE(InputMemoryStream& stream);
-        MVE(const uint8_t* buffer, uint32_t size);
-        MVE(bytes const& buffer);
+        static MVE from_bytes(InputMemoryStream& stream);
+        static MVE from_bytes(const uint8_t* buffer, uint32_t size);
+        static MVE from_bytes(bytes const& buffer);
+
         MVE(uint8_t mask, uint8_t value, uint8_t expectation);
 
         uint8_t mask() const;
@@ -62,7 +90,7 @@ namespace streetpass::cec {
         }
 
       private:
-        void parse(InputMemoryStream& stream);
+        MVE() = default;
 
         struct title_filter_mve {
           uint8_t mask;
@@ -73,10 +101,11 @@ namespace streetpass::cec {
         title_filter_mve m_internal;
       };
 
-      TitleFilter(InputMemoryStream& stream);
-      TitleFilter(const uint8_t* buffer, uint32_t size);
-      TitleFilter(bytes const& buffer);
-      TitleFilter(tid_type tid, send_mode_t mode);
+      static TitleFilter from_bytes(InputMemoryStream& stream);
+      static TitleFilter from_bytes(const uint8_t* buffer, uint32_t size);
+      static TitleFilter from_bytes(bytes const& buffer);
+
+      TitleFilter(tid_type tid, send_mode_t mode, std::vector<MVE> mve_list);
 
       tid_type title_id() const;
       void title_id(tid_type tid);
@@ -88,8 +117,9 @@ namespace streetpass::cec {
       unsigned total_size() const;
       bytes to_bytes() const;
       friend std::ostream& operator<<(std::ostream& s, const TitleFilter& e);
+
     private:
-      void parse(InputMemoryStream& stream);
+      TitleFilter() = default;
 
       struct title_filter_header {
         uint32_t title_id;  // this one is big endian
@@ -108,9 +138,10 @@ namespace streetpass::cec {
 
     class KeyFilter : public Filter {
     public:
-      KeyFilter(InputMemoryStream& stream);
-      KeyFilter(const uint8_t* buffer, uint32_t size);
-      KeyFilter(bytes const& buffer);
+      static KeyFilter from_bytes(InputMemoryStream& stream);
+      static KeyFilter from_bytes(const uint8_t* buffer, uint32_t size);
+      static KeyFilter from_bytes(bytes const& buffer);
+
       KeyFilter(key_type const& k);
 
       key_type key() const;
@@ -119,8 +150,9 @@ namespace streetpass::cec {
       unsigned total_size() const;
       bytes to_bytes() const;
       friend std::ostream& operator<<(std::ostream& s, const KeyFilter& e);
+
     private:
-      void parse(InputMemoryStream&);
+      KeyFilter() = default;
 
       struct key_filter {
         uint8_t key[8];
@@ -146,9 +178,11 @@ namespace streetpass::cec {
       static_assert(std::is_base_of<Filter, T>::value, "T should inherit from Filter");
     public:
       static const filter_list_marker_t MARKER;
-      FilterList(InputMemoryStream& stream);
-      FilterList(const uint8_t* buffer, uint32_t size);
-      FilterList(bytes const& buffer);
+
+      static FilterList<T> from_bytes(InputMemoryStream& stream);
+      static FilterList<T> from_bytes(const uint8_t* buffer, uint32_t size);
+      static FilterList<T> from_bytes(bytes const& buffer);
+
       FilterList();
 
       filter_list_marker_t marker() const;
@@ -162,15 +196,15 @@ namespace streetpass::cec {
 
       template<class E>
       friend std::ostream& operator<<(std::ostream& s, const FilterList<E>& l);
-    private:
-      void parse(InputMemoryStream& stream);
 
+    private:
       filter_list_header m_internal;
       std::vector<T> m_list;
     };
 
   private:
-    void parse(InputMemoryStream& stream);
+    ModuleFilter() = default;
+
     FilterList<TitleFilter> m_title_list;
     FilterList<KeyFilter> m_key_list;
   };

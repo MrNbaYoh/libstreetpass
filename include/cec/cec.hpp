@@ -13,8 +13,6 @@ namespace streetpass::cec {
   using bytes = std::vector<uint8_t>;
 
   class ICecFormat {
-  private:
-    virtual void parse(InputMemoryStream&) = 0;
   public:
     virtual bytes to_bytes() const = 0;
   };
