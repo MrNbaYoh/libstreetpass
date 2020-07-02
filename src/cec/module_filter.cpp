@@ -83,6 +83,74 @@ namespace streetpass::cec {
     return s;
   }
 
+  ModuleFilter::TitleFilter::MVE::MVE(InputMemoryStream& stream) {
+    parse(stream);
+  }
+
+  ModuleFilter::TitleFilter::MVE::MVE(const uint8_t* buffer, uint32_t size) {
+    InputMemoryStream stream(buffer, size);
+    parse(stream);
+  }
+
+  ModuleFilter::TitleFilter::MVE::MVE(bytes const& buffer) :
+    MVE(buffer.data(), buffer.size()) {}
+
+  ModuleFilter::TitleFilter::MVE::MVE(uint8_t m, uint8_t v, uint8_t e) {
+    mask(m);
+    value(v);
+    expectation(e);
+  }
+
+  void ModuleFilter::TitleFilter::MVE::parse(InputMemoryStream& stream) {
+    if(!stream.can_read(sizeof(m_internal)))
+      throw "bad mve";
+    stream.read(&m_internal, sizeof(m_internal));
+  }
+
+  uint8_t ModuleFilter::TitleFilter::MVE::mask() const {
+    return m_internal.mask;
+  }
+
+  void ModuleFilter::TitleFilter::MVE::mask(uint8_t m) {
+    m_internal.mask = m;
+  }
+
+  uint8_t ModuleFilter::TitleFilter::MVE::value() const {
+    return m_internal.value;
+  }
+
+  void ModuleFilter::TitleFilter::MVE::value(uint8_t v) {
+    m_internal.value = v;
+  }
+
+  uint8_t ModuleFilter::TitleFilter::MVE::expectation() const {
+    return m_internal.expectation;
+  }
+
+  void ModuleFilter::TitleFilter::MVE::expectation(uint8_t e) {
+    m_internal.expectation = e;
+  }
+
+  bytes ModuleFilter::TitleFilter::MVE::to_bytes() const {
+    bytes buffer(ModuleFilter::TitleFilter::MVE::static_size());
+    OutputMemoryStream stream(buffer);
+    stream.write(m_internal);
+
+    return buffer;
+  }
+
+  std::ostream& operator<<(std::ostream& s, const ModuleFilter::TitleFilter::MVE& e) {
+    std::stringstream ss;
+    ss << std::hex;
+    ss << "MVE[mask=" << (int)e.mask();
+    ss << ", value=" << (int)e.value();
+    ss << ", expectation=" << (int)e.expectation();
+    ss << "]";
+
+    s << ss.str();
+    return s;
+  }
+
   ModuleFilter::TitleFilter::TitleFilter(InputMemoryStream& stream) {
     parse(stream);
   }
@@ -98,24 +166,21 @@ namespace streetpass::cec {
   ModuleFilter::TitleFilter::TitleFilter(tid_type tid, send_mode_t mode) {
     title_id(tid);
     send_mode(mode);
+    m_internal.number_mve = 0;
   }
 
   void ModuleFilter::TitleFilter::parse(InputMemoryStream& stream) {
     if(!stream.can_read(sizeof(m_internal)))
       throw "bad title filter";
-      
+
     stream.read(&m_internal, sizeof(m_internal));
     if(m_internal.send_mode > send_mode_t::SEND_RECV)
       throw "bad send mode";
 
     uint8_t mve_count = m_internal.number_mve;
-    if(mve_count)
-    {
-      unsigned mve_byte_size = mve_count * sizeof(ModuleFilter::TitleFilter::title_filter_mve);
-      if(!stream.can_read(mve_byte_size))
-        throw "bad read mve";
-      m_mve_list.resize(mve_count);
-      stream.read(m_mve_list.data(), mve_byte_size);
+    while(mve_count) {
+      m_mve_list.push_back(MVE(stream));
+      mve_count--;
     }
   }
 
@@ -135,11 +200,11 @@ namespace streetpass::cec {
     m_internal.send_mode = mode;
   }
 
-  std::vector<ModuleFilter::TitleFilter::title_filter_mve> ModuleFilter::TitleFilter::mve_list() const {
+  std::vector<ModuleFilter::TitleFilter::MVE> ModuleFilter::TitleFilter::mve_list() const {
     return m_mve_list;
   }
 
-  void ModuleFilter::TitleFilter::mve_list(std::vector<ModuleFilter::TitleFilter::title_filter_mve> const& mve_list) {
+  void ModuleFilter::TitleFilter::mve_list(std::vector<ModuleFilter::TitleFilter::MVE> const& mve_list) {
     if(mve_list.size() > 0xF)
       throw std::length_error("MVE list size cannot exceed 15");
 
@@ -148,16 +213,19 @@ namespace streetpass::cec {
   }
 
   unsigned ModuleFilter::TitleFilter::total_size() const {
-    return sizeof(m_internal) + m_mve_list.size() * sizeof(ModuleFilter::TitleFilter::title_filter_mve);
+    return sizeof(m_internal) + m_mve_list.size() * ModuleFilter::TitleFilter::MVE::static_size();
   }
 
   bytes ModuleFilter::TitleFilter::to_bytes() const {
-    bytes buffer(sizeof(m_internal) + m_mve_list.size() * sizeof(ModuleFilter::TitleFilter::title_filter_mve));
+    bytes buffer(sizeof(m_internal) + m_mve_list.size() * ModuleFilter::TitleFilter::MVE::static_size());
     OutputMemoryStream stream(buffer);
     stream.write(m_internal);
 
-    auto mve_bytes = reinterpret_cast<const uint8_t*>(m_mve_list.data());
-    stream.write(mve_bytes, m_mve_list.size() * sizeof(ModuleFilter::TitleFilter::title_filter_mve));
+    for(ModuleFilter::TitleFilter::MVE const& mve: m_mve_list) {
+      bytes mve_bytes = mve.to_bytes();
+      stream.write(mve_bytes.data(), mve_bytes.size());
+    }
+
     return buffer;
   }
 
@@ -170,8 +238,8 @@ namespace streetpass::cec {
     if(e.m_mve_list.size()) {
       ss << ", mve_list=";
       //TODO: better printer for MVE list
-      for(ModuleFilter::TitleFilter::title_filter_mve const& mve: e.m_mve_list)
-        ss << std::setw(2) << (int)mve.mask << " " << (int)mve.value << " " << (int)mve.expected;
+      for(ModuleFilter::TitleFilter::MVE const& mve: e.m_mve_list)
+        ss << " " << mve;
     }
 
     s << ss.str();

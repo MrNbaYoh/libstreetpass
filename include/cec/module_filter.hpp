@@ -40,11 +40,38 @@ namespace streetpass::cec {
 
     class TitleFilter : public Filter {
     public:
-      struct title_filter_mve {
-        uint8_t mask;
-        uint8_t value;
-        uint8_t expected;
-      } __attribute__((__packed__));
+      class MVE : public ICecFormat {
+      public:
+        MVE(InputMemoryStream& stream);
+        MVE(const uint8_t* buffer, uint32_t size);
+        MVE(bytes const& buffer);
+        MVE(uint8_t mask, uint8_t value, uint8_t expectation);
+
+        uint8_t mask() const;
+        void mask(uint8_t m);
+        uint8_t value() const;
+        void value(uint8_t v);
+        uint8_t expectation() const;
+        void expectation(uint8_t e);
+
+        bytes to_bytes() const;
+        friend std::ostream& operator<<(std::ostream& s, const ModuleFilter& l);
+
+        inline static uint32_t static_size() {
+          return sizeof(title_filter_mve);
+        }
+
+      private:
+        void parse(InputMemoryStream& stream);
+
+        struct title_filter_mve {
+          uint8_t mask;
+          uint8_t value;
+          uint8_t expectation;
+        } __attribute__((__packed__));
+
+        title_filter_mve m_internal;
+      };
 
       TitleFilter(InputMemoryStream& stream);
       TitleFilter(const uint8_t* buffer, uint32_t size);
@@ -55,8 +82,8 @@ namespace streetpass::cec {
       void title_id(tid_type tid);
       send_mode_t send_mode() const;
       void send_mode(send_mode_t mode);
-      std::vector<title_filter_mve> mve_list() const;
-      void mve_list(std::vector<title_filter_mve> const& mve_list);
+      std::vector<MVE> mve_list() const;
+      void mve_list(std::vector<MVE> const& mve_list);
 
       unsigned total_size() const;
       bytes to_bytes() const;
@@ -76,7 +103,7 @@ namespace streetpass::cec {
       } __attribute__((__packed__));
 
       title_filter_header m_internal;
-      std::vector<title_filter_mve> m_mve_list;
+      std::vector<MVE> m_mve_list;
     };
 
     class KeyFilter : public Filter {
