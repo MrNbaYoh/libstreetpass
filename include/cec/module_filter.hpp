@@ -34,12 +34,14 @@ namespace streetpass::cec {
     bytes to_bytes() const;
     friend std::ostream& operator<<(std::ostream& s, const ModuleFilter& l);
 
+    template<class T>
     class Filter : public ICecFormat {
     public:
       virtual unsigned total_size() const = 0;
+      virtual bool match(T const& other) const = 0;
     };
 
-    class RawBytesFilter : public Filter {
+    class RawBytesFilter : public Filter<RawBytesFilter> {
     public:
       static RawBytesFilter from_bytes(InputMemoryStream& stream);
       static RawBytesFilter from_bytes(const uint8_t* buffer, uint32_t size);
@@ -51,6 +53,7 @@ namespace streetpass::cec {
       void raw_bytes(bytes const& raw_bytes);
 
       unsigned total_size() const;
+      bool match(RawBytesFilter const& other) const;
       bytes to_bytes() const;
       friend std::ostream& operator<<(std::ostream& s, const RawBytesFilter& f);
 
@@ -65,7 +68,7 @@ namespace streetpass::cec {
       raw_filter m_internal;
     };
 
-    class TitleFilter : public Filter {
+    class TitleFilter : public Filter<TitleFilter> {
     public:
       class MVE : public ICecFormat {
       public:
@@ -81,6 +84,8 @@ namespace streetpass::cec {
         void value(uint8_t v);
         uint8_t expectation() const;
         void expectation(uint8_t e);
+
+        bool match(MVE const& other) const;
 
         bytes to_bytes() const;
         friend std::ostream& operator<<(std::ostream& s, const ModuleFilter& l);
@@ -111,10 +116,12 @@ namespace streetpass::cec {
       void title_id(tid_type tid);
       send_mode_t send_mode() const;
       void send_mode(send_mode_t mode);
-      std::vector<MVE> mve_list() const;
+      std::vector<MVE>& mve_list();
+      std::vector<MVE> const& mve_list() const;
       void mve_list(std::vector<MVE> const& mve_list);
 
       unsigned total_size() const;
+      bool match(TitleFilter const& other) const;
       bytes to_bytes() const;
       friend std::ostream& operator<<(std::ostream& s, const TitleFilter& e);
 
@@ -136,7 +143,7 @@ namespace streetpass::cec {
       std::vector<MVE> m_mve_list;
     };
 
-    class KeyFilter : public Filter {
+    class KeyFilter : public Filter<KeyFilter> {
     public:
       static KeyFilter from_bytes(InputMemoryStream& stream);
       static KeyFilter from_bytes(const uint8_t* buffer, uint32_t size);
@@ -148,6 +155,7 @@ namespace streetpass::cec {
       void key(key_type const& k);
 
       unsigned total_size() const;
+      bool match(KeyFilter const& other) const;
       bytes to_bytes() const;
       friend std::ostream& operator<<(std::ostream& s, const KeyFilter& e);
 
@@ -175,7 +183,7 @@ namespace streetpass::cec {
 
     template<class T>
     class FilterList : public ICecFormat {
-      static_assert(std::is_base_of<Filter, T>::value, "T should inherit from Filter");
+      static_assert(std::is_base_of<Filter<T>, T>::value, "T should inherit from Filter");
     public:
       static const filter_list_marker_t MARKER;
 
@@ -189,9 +197,13 @@ namespace streetpass::cec {
       void marker(filter_list_marker_t marker);
       small_uint<4> flags() const;
       void flags(small_uint<4> flags);
+      std::vector<T>& filters();
+      std::vector<T> const& filters() const;
+      void filters(std::vector<T> const& filters);
 
       unsigned count() const;
       unsigned total_size() const;
+      bool match(FilterList<T> const& other) const;
       bytes to_bytes() const;
 
       template<class E>

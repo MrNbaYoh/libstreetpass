@@ -26,6 +26,24 @@ namespace streetpass::cec {
     }
   }
 
+  bool send_mode_match(send_mode_t mode1, send_mode_t mode2) {
+    if(mode2 > send_mode_t::SEND_RECV)
+      return false;
+
+    switch(mode1) {
+      case send_mode_t::EXCHANGE :
+        return mode2 == send_mode_t::EXCHANGE;
+      case send_mode_t::RECV_ONLY :
+        return mode2 == send_mode_t::SEND_ONLY || mode2 == send_mode_t::SEND_RECV;
+      case send_mode_t::SEND_ONLY :
+        return mode2 == send_mode_t::RECV_ONLY || mode2 == send_mode_t::SEND_RECV;
+      case send_mode_t::SEND_RECV :
+        return mode2 != send_mode_t::EXCHANGE;
+      default :
+        return false;
+    }
+  }
+
   ModuleFilter ModuleFilter::from_bytes(InputMemoryStream& stream) {
     ModuleFilter filter;
     bool found_title_list = false;
@@ -117,6 +135,14 @@ namespace streetpass::cec {
     return sizeof(m_internal);
   }
 
+  bool ModuleFilter::RawBytesFilter::match(ModuleFilter::RawBytesFilter const& other) const {
+    return (m_internal.cmp_length == other.m_internal.cmp_length) &&
+      std::equal(m_internal.raw_bytes,
+        m_internal.raw_bytes + m_internal.cmp_length,
+        other.m_internal.raw_bytes
+      );
+  }
+
   bytes ModuleFilter::RawBytesFilter::to_bytes() const {
     bytes buffer(sizeof(m_internal));
     OutputMemoryStream stream(buffer);
@@ -185,6 +211,11 @@ namespace streetpass::cec {
 
   void ModuleFilter::TitleFilter::MVE::expectation(uint8_t e) {
     m_internal.expectation = e;
+  }
+
+  bool ModuleFilter::TitleFilter::MVE::match(ModuleFilter::TitleFilter::MVE const& other) const {
+    return ((this->mask() & this->expectation()) == (this->mask() & other.value())) &&
+      ((other.mask() & other.expectation()) == (other.mask() & this->value()));
   }
 
   bytes ModuleFilter::TitleFilter::MVE::to_bytes() const {
@@ -257,7 +288,11 @@ namespace streetpass::cec {
     m_internal.send_mode = mode;
   }
 
-  std::vector<ModuleFilter::TitleFilter::MVE> ModuleFilter::TitleFilter::mve_list() const {
+  std::vector<ModuleFilter::TitleFilter::MVE>& ModuleFilter::TitleFilter::mve_list() {
+    return m_mve_list;
+  }
+
+  std::vector<ModuleFilter::TitleFilter::MVE> const& ModuleFilter::TitleFilter::mve_list() const {
     return m_mve_list;
   }
 
@@ -271,6 +306,23 @@ namespace streetpass::cec {
 
   unsigned ModuleFilter::TitleFilter::total_size() const {
     return sizeof(m_internal) + m_mve_list.size() * ModuleFilter::TitleFilter::MVE::static_size();
+  }
+
+  bool ModuleFilter::TitleFilter::match(ModuleFilter::TitleFilter const& other) const {
+    if(this->title_id() != other.title_id())
+      return false;
+    if(!send_mode_match(this->send_mode(), other.send_mode()))
+      return false;
+
+    std::vector<MVE> const& own_list = this->mve_list();
+    std::vector<MVE> const& other_list = other.mve_list();
+    if(own_list.size() != other_list.size())
+      return false;
+    bool match = true;
+    for(unsigned i = 0; match && i < own_list.size(); i++)
+      match &= own_list[i].match(other_list[i]);
+
+    return match;
   }
 
   bytes ModuleFilter::TitleFilter::to_bytes() const {
@@ -337,6 +389,10 @@ namespace streetpass::cec {
 
   unsigned ModuleFilter::KeyFilter::total_size() const {
     return sizeof(m_internal);
+  }
+
+  bool ModuleFilter::KeyFilter::match(ModuleFilter::KeyFilter const&) const {
+    return true;
   }
 
   bytes ModuleFilter::KeyFilter::to_bytes() const {
@@ -423,6 +479,32 @@ namespace streetpass::cec {
   }
 
   template<class T>
+  std::vector<T>& ModuleFilter::FilterList<T>::filters() {
+    return m_list;
+  }
+
+  template<class T>
+  std::vector<T> const& ModuleFilter::FilterList<T>::filters() const {
+    return m_list;
+  }
+
+  template<class T>
+  void ModuleFilter::FilterList<T>::filters(std::vector<T> const& filters) {
+    m_list = filters;
+  }
+
+  template<class T>
+  bool ModuleFilter::FilterList<T>::match(ModuleFilter::FilterList<T> const& other) const {
+    for(unsigned i = 0; this->count(); i++) {
+      for(unsigned j = i; other.count(); j++)
+        if(this->filters()[i].match(other.filters()[j]))
+          return true;
+    }
+
+    return false;
+  }
+
+  template<class T>
   unsigned ModuleFilter::FilterList<T>::count() const {
     return m_list.size();
   }
@@ -458,12 +540,16 @@ namespace streetpass::cec {
   }
 
   template<>
+  const filter_list_marker_t ModuleFilter::FilterList<ModuleFilter::RawBytesFilter>::MARKER =
+    filter_list_marker_t::RAW_BYTES_FILTER;
+  template<>
   const filter_list_marker_t ModuleFilter::FilterList<ModuleFilter::TitleFilter>::MARKER =
     filter_list_marker_t::TITLE_FILTER;
   template<>
   const filter_list_marker_t ModuleFilter::FilterList<ModuleFilter::KeyFilter>::MARKER =
     filter_list_marker_t::KEY_FILTER;
 
+  template class ModuleFilter::FilterList<ModuleFilter::RawBytesFilter>;
   template class ModuleFilter::FilterList<ModuleFilter::TitleFilter>;
   template class ModuleFilter::FilterList<ModuleFilter::KeyFilter>;
 }
