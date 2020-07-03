@@ -217,6 +217,7 @@ namespace streetpass::cec {
   private:
     ModuleFilter() = default;
 
+    FilterList<RawBytesFilter> m_raw_bytes_list;
     FilterList<TitleFilter> m_title_list;
     FilterList<KeyFilter> m_key_list;
   };

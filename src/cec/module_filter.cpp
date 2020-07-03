@@ -46,26 +46,36 @@ namespace streetpass::cec {
 
   ModuleFilter ModuleFilter::from_bytes(InputMemoryStream& stream) {
     ModuleFilter filter;
+    bool found_raw_bytes_list = false;
     bool found_title_list = false;
     bool found_key_list = false;
 
     while(stream.can_read(sizeof(filter_list_header))) {
       const filter_list_header* header =
         reinterpret_cast<const filter_list_header*>(stream.pointer());
-      if(header->marker == filter_list_marker_t::TITLE_FILTER) {
+        
+      if(header->marker == filter_list_marker_t::RAW_BYTES_FILTER) {
+        if(found_raw_bytes_list)
+          throw "bad - already found raw bytes list";
+        filter.m_raw_bytes_list = FilterList<RawBytesFilter>::from_bytes(stream);
+        found_raw_bytes_list = true;
+      } else if(header->marker == filter_list_marker_t::TITLE_FILTER) {
         if(found_title_list)
           throw "bad - already found title list";
         filter.m_title_list = FilterList<TitleFilter>::from_bytes(stream);
+        found_title_list = true;
       } else if(header->marker == filter_list_marker_t::KEY_FILTER) {
         if(found_key_list)
           throw "bad - already found key list";
         filter.m_key_list = FilterList<KeyFilter>::from_bytes(stream);
-        if(filter.m_key_list.count() != 1)
-          throw "bad - key list count != 1";
+        found_key_list = true;
       } else {
         throw "bad marker";
       }
     }
+
+    if(filter.m_key_list.count() != 1)
+      throw "bad - key list count != 1";
 
     return filter;
   }
