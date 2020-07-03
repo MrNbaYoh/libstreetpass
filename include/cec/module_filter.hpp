@@ -27,13 +27,6 @@ namespace streetpass::cec {
 
   class ModuleFilter : public ICecFormat {
   public:
-    static ModuleFilter from_bytes(InputMemoryStream& stream);
-    static ModuleFilter from_bytes(const uint8_t* buffer, uint32_t size);
-    static ModuleFilter from_bytes(bytes const& buffer);
-
-    bytes to_bytes() const;
-    friend std::ostream& operator<<(std::ostream& s, const ModuleFilter& l);
-
     template<class T>
     class Filter : public ICecFormat {
     public:
@@ -214,9 +207,23 @@ namespace streetpass::cec {
       std::vector<T> m_list;
     };
 
-  private:
+    static ModuleFilter from_bytes(InputMemoryStream& stream);
+    static ModuleFilter from_bytes(const uint8_t* buffer, uint32_t size);
+    static ModuleFilter from_bytes(bytes const& buffer);
+
     ModuleFilter() = default;
 
+    FilterList<RawBytesFilter>& raw_bytes_filters();
+    FilterList<RawBytesFilter> const& raw_bytes_filters() const;
+    FilterList<TitleFilter>& title_filters();
+    FilterList<TitleFilter> const& title_filters() const;
+    key_type key() const;
+    void key(key_type const& k);
+
+    bytes to_bytes() const;
+    friend std::ostream& operator<<(std::ostream& s, const ModuleFilter& l);
+
+  private:
     FilterList<RawBytesFilter> m_raw_bytes_list;
     FilterList<TitleFilter> m_title_list;
     FilterList<KeyFilter> m_key_list;

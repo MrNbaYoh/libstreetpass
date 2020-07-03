@@ -53,7 +53,7 @@ namespace streetpass::cec {
     while(stream.can_read(sizeof(filter_list_header))) {
       const filter_list_header* header =
         reinterpret_cast<const filter_list_header*>(stream.pointer());
-        
+
       if(header->marker == filter_list_marker_t::RAW_BYTES_FILTER) {
         if(found_raw_bytes_list)
           throw "bad - already found raw bytes list";
@@ -89,11 +89,47 @@ namespace streetpass::cec {
     return from_bytes(buffer.data(), buffer.size());
   }
 
+  ModuleFilter::FilterList<ModuleFilter::RawBytesFilter>& ModuleFilter::raw_bytes_filters() {
+    return m_raw_bytes_list;
+  }
+
+  ModuleFilter::FilterList<ModuleFilter::RawBytesFilter> const& ModuleFilter::raw_bytes_filters() const {
+    return m_raw_bytes_list;
+  }
+
+  ModuleFilter::FilterList<ModuleFilter::TitleFilter>& ModuleFilter::title_filters() {
+    return m_title_list;
+  }
+
+  ModuleFilter::FilterList<ModuleFilter::TitleFilter> const& ModuleFilter::title_filters() const {
+    return m_title_list;
+  }
+
+  key_type ModuleFilter::key() const {
+    return m_key_list.filters().at(0).key();
+  }
+
+  void ModuleFilter::key(key_type const& k) {
+    m_key_list.filters().at(0).key(k);
+  }
+
   bytes ModuleFilter::to_bytes() const {
-    bytes buffer(m_title_list.total_size() + m_key_list.total_size());
+    unsigned buffer_size = m_key_list.total_size();
+    if(m_raw_bytes_list.count())
+      buffer_size += m_raw_bytes_list.total_size();
+    if(m_title_list.count())
+      buffer_size += m_title_list.total_size();
+
+    bytes buffer(buffer_size);
     OutputMemoryStream stream(buffer);
-    bytes tl_bytes = m_title_list.to_bytes();
-    stream.write(tl_bytes.data(), tl_bytes.size());
+    if(m_raw_bytes_list.count()) {
+      bytes rbl_bytes = m_raw_bytes_list.to_bytes();
+      stream.write(rbl_bytes.data(), rbl_bytes.size());
+    }
+    if(m_title_list.count()) {
+      bytes tl_bytes = m_title_list.to_bytes();
+      stream.write(tl_bytes.data(), tl_bytes.size());
+    }
     bytes cl_bytes = m_key_list.to_bytes();
     stream.write(cl_bytes.data(), cl_bytes.size());
     return buffer;
