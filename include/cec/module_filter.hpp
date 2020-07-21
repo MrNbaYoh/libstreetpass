@@ -109,7 +109,6 @@ namespace streetpass::cec {
       void title_id(tid_type tid);
       send_mode_t send_mode() const;
       void send_mode(send_mode_t mode);
-      std::vector<MVE>& mve_list();
       std::vector<MVE> const& mve_list() const;
       void mve_list(std::vector<MVE> const& mve_list);
 
@@ -190,7 +189,6 @@ namespace streetpass::cec {
       void marker(filter_list_marker_t marker);
       small_uint<4> flags() const;
       void flags(small_uint<4> flags);
-      std::vector<T>& filters();
       std::vector<T> const& filters() const;
       void filters(std::vector<T> const& filters);
 
@@ -211,7 +209,7 @@ namespace streetpass::cec {
     static ModuleFilter from_bytes(const uint8_t* buffer, uint32_t size);
     static ModuleFilter from_bytes(bytes const& buffer);
 
-    ModuleFilter() = default;
+    ModuleFilter(key_type const& k);
 
     FilterList<RawBytesFilter>& raw_bytes_filters();
     FilterList<RawBytesFilter> const& raw_bytes_filters() const;
@@ -224,6 +222,8 @@ namespace streetpass::cec {
     friend std::ostream& operator<<(std::ostream& s, const ModuleFilter& l);
 
   private:
+    ModuleFilter() = default;
+
     FilterList<RawBytesFilter> m_raw_bytes_list;
     FilterList<TitleFilter> m_title_list;
     FilterList<KeyFilter> m_key_list;

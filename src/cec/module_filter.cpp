@@ -89,6 +89,10 @@ namespace streetpass::cec {
     return from_bytes(buffer.data(), buffer.size());
   }
 
+  ModuleFilter::ModuleFilter(key_type const& k) {
+    key(k);
+  }
+
   ModuleFilter::FilterList<ModuleFilter::RawBytesFilter>& ModuleFilter::raw_bytes_filters() {
     return m_raw_bytes_list;
   }
@@ -110,7 +114,7 @@ namespace streetpass::cec {
   }
 
   void ModuleFilter::key(key_type const& k) {
-    m_key_list.filters().at(0).key(k);
+    m_key_list.filters({KeyFilter(k)});
   }
 
   bytes ModuleFilter::to_bytes() const {
@@ -334,10 +338,6 @@ namespace streetpass::cec {
     m_internal.send_mode = mode;
   }
 
-  std::vector<ModuleFilter::TitleFilter::MVE>& ModuleFilter::TitleFilter::mve_list() {
-    return m_mve_list;
-  }
-
   std::vector<ModuleFilter::TitleFilter::MVE> const& ModuleFilter::TitleFilter::mve_list() const {
     return m_mve_list;
   }
@@ -525,17 +525,19 @@ namespace streetpass::cec {
   }
 
   template<class T>
-  std::vector<T>& ModuleFilter::FilterList<T>::filters() {
-    return m_list;
-  }
-
-  template<class T>
   std::vector<T> const& ModuleFilter::FilterList<T>::filters() const {
     return m_list;
   }
 
   template<class T>
   void ModuleFilter::FilterList<T>::filters(std::vector<T> const& filters) {
+    uint8_t total_size = 0;
+    for(T filter: filters) {
+      unsigned filter_size = filter.total_size();
+      if(filter_size + total_size > total_size)
+        throw std::length_error("Byte size of filter list cannot exceed 0xFF");
+      total_size += filter.total_size();
+    }
     m_list = filters;
   }
 
