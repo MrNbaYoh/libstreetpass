@@ -108,6 +108,11 @@ namespace streetpass::cec {
     m_key_list.filters({KeyFilter(k)});
   }
 
+  bool ModuleFilter::match(ModuleFilter const& other) const {
+    return m_title_list.match(other.title_filters()) ||
+      m_raw_bytes_list.match(other.raw_bytes_filters());
+  }
+
   unsigned ModuleFilter::byte_size() const {
     unsigned buffer_size = m_key_list.byte_size();
     if(m_raw_bytes_list.count())

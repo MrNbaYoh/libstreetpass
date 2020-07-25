@@ -209,6 +209,7 @@ namespace streetpass::cec {
     key_type key() const;
     void key(key_type const& k);
 
+    bool match(ModuleFilter const& other) const;
     unsigned byte_size() const;
     bytes to_bytes() const;
     friend std::ostream& operator<<(std::ostream& s, const ModuleFilter& l);
