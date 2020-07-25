@@ -27,25 +27,22 @@ namespace streetpass::cec {
 
   class ModuleFilter : public ICecFormat {
   public:
-    template<class T>
+    template<typename T>
     class Filter : public ICecFormat {
     public:
-      virtual unsigned total_size() const = 0;
       virtual bool match(T const& other) const = 0;
     };
 
     class RawBytesFilter : public Filter<RawBytesFilter> {
     public:
-      static RawBytesFilter from_bytes(InputMemoryStream& stream);
-      static RawBytesFilter from_bytes(const uint8_t* buffer, uint32_t size);
-      static RawBytesFilter from_bytes(bytes const& buffer);
+      static RawBytesFilter from_stream(InputMemoryStream& stream);
 
       RawBytesFilter(bytes const& raw_bytes);
 
       bytes raw_bytes() const;
       void raw_bytes(bytes const& raw_bytes);
 
-      unsigned total_size() const;
+      unsigned byte_size() const;
       bool match(RawBytesFilter const& other) const;
       bytes to_bytes() const;
       friend std::ostream& operator<<(std::ostream& s, const RawBytesFilter& f);
@@ -65,9 +62,7 @@ namespace streetpass::cec {
     public:
       class MVE : public ICecFormat {
       public:
-        static MVE from_bytes(InputMemoryStream& stream);
-        static MVE from_bytes(const uint8_t* buffer, uint32_t size);
-        static MVE from_bytes(bytes const& buffer);
+        static MVE from_stream(InputMemoryStream& stream);
 
         MVE(uint8_t mask, uint8_t value, uint8_t expectation);
 
@@ -83,7 +78,11 @@ namespace streetpass::cec {
         bytes to_bytes() const;
         friend std::ostream& operator<<(std::ostream& s, const ModuleFilter& l);
 
-        inline static uint32_t static_size() {
+        inline unsigned byte_size() const {
+          return sizeof(title_filter_mve);
+        }
+
+        inline static unsigned fixed_byte_size() {
           return sizeof(title_filter_mve);
         }
 
@@ -99,9 +98,7 @@ namespace streetpass::cec {
         title_filter_mve m_internal;
       };
 
-      static TitleFilter from_bytes(InputMemoryStream& stream);
-      static TitleFilter from_bytes(const uint8_t* buffer, uint32_t size);
-      static TitleFilter from_bytes(bytes const& buffer);
+      static TitleFilter from_stream(InputMemoryStream& stream);
 
       TitleFilter(tid_type tid, send_mode_t mode, std::vector<MVE> mve_list);
 
@@ -112,7 +109,7 @@ namespace streetpass::cec {
       std::vector<MVE> const& mve_list() const;
       void mve_list(std::vector<MVE> const& mve_list);
 
-      unsigned total_size() const;
+      unsigned byte_size() const;
       bool match(TitleFilter const& other) const;
       bytes to_bytes() const;
       friend std::ostream& operator<<(std::ostream& s, const TitleFilter& e);
@@ -137,16 +134,14 @@ namespace streetpass::cec {
 
     class KeyFilter : public Filter<KeyFilter> {
     public:
-      static KeyFilter from_bytes(InputMemoryStream& stream);
-      static KeyFilter from_bytes(const uint8_t* buffer, uint32_t size);
-      static KeyFilter from_bytes(bytes const& buffer);
+      static KeyFilter from_stream(InputMemoryStream& stream);
 
       KeyFilter(key_type const& k);
 
       key_type key() const;
       void key(key_type const& k);
 
-      unsigned total_size() const;
+      unsigned byte_size() const;
       bool match(KeyFilter const& other) const;
       bytes to_bytes() const;
       friend std::ostream& operator<<(std::ostream& s, const KeyFilter& e);
@@ -179,9 +174,7 @@ namespace streetpass::cec {
     public:
       static const filter_list_marker_t MARKER;
 
-      static FilterList<T> from_bytes(InputMemoryStream& stream);
-      static FilterList<T> from_bytes(const uint8_t* buffer, uint32_t size);
-      static FilterList<T> from_bytes(bytes const& buffer);
+      static FilterList<T> from_stream(InputMemoryStream& stream);
 
       FilterList();
 
@@ -193,7 +186,7 @@ namespace streetpass::cec {
       void filters(std::vector<T> const& filters);
 
       unsigned count() const;
-      unsigned total_size() const;
+      unsigned byte_size() const;
       bool match(FilterList<T> const& other) const;
       bytes to_bytes() const;
 
@@ -205,9 +198,7 @@ namespace streetpass::cec {
       std::vector<T> m_list;
     };
 
-    static ModuleFilter from_bytes(InputMemoryStream& stream);
-    static ModuleFilter from_bytes(const uint8_t* buffer, uint32_t size);
-    static ModuleFilter from_bytes(bytes const& buffer);
+    static ModuleFilter from_stream(InputMemoryStream& stream);
 
     ModuleFilter(key_type const& k);
 
@@ -218,6 +209,7 @@ namespace streetpass::cec {
     key_type key() const;
     void key(key_type const& k);
 
+    unsigned byte_size() const;
     bytes to_bytes() const;
     friend std::ostream& operator<<(std::ostream& s, const ModuleFilter& l);
 

@@ -44,7 +44,7 @@ namespace streetpass::cec {
     }
   }
 
-  ModuleFilter ModuleFilter::from_bytes(InputMemoryStream& stream) {
+  ModuleFilter ModuleFilter::from_stream(InputMemoryStream& stream) {
     ModuleFilter filter;
     bool found_raw_bytes_list = false;
     bool found_title_list = false;
@@ -57,17 +57,17 @@ namespace streetpass::cec {
       if(header->marker == filter_list_marker_t::RAW_BYTES_FILTER) {
         if(found_raw_bytes_list)
           throw "bad - already found raw bytes list";
-        filter.m_raw_bytes_list = FilterList<RawBytesFilter>::from_bytes(stream);
+        filter.m_raw_bytes_list = FilterList<RawBytesFilter>::from_stream(stream);
         found_raw_bytes_list = true;
       } else if(header->marker == filter_list_marker_t::TITLE_FILTER) {
         if(found_title_list)
           throw "bad - already found title list";
-        filter.m_title_list = FilterList<TitleFilter>::from_bytes(stream);
+        filter.m_title_list = FilterList<TitleFilter>::from_stream(stream);
         found_title_list = true;
       } else if(header->marker == filter_list_marker_t::KEY_FILTER) {
         if(found_key_list)
           throw "bad - already found key list";
-        filter.m_key_list = FilterList<KeyFilter>::from_bytes(stream);
+        filter.m_key_list = FilterList<KeyFilter>::from_stream(stream);
         found_key_list = true;
       } else {
         throw "bad marker";
@@ -78,15 +78,6 @@ namespace streetpass::cec {
       throw "bad - key list count != 1";
 
     return filter;
-  }
-
-  ModuleFilter ModuleFilter::from_bytes(const uint8_t* buffer, uint32_t size) {
-    InputMemoryStream stream(buffer, size);
-    return from_bytes(stream);
-  }
-
-  ModuleFilter ModuleFilter::from_bytes(bytes const& buffer) {
-    return from_bytes(buffer.data(), buffer.size());
   }
 
   ModuleFilter::ModuleFilter(key_type const& k) {
@@ -117,14 +108,18 @@ namespace streetpass::cec {
     m_key_list.filters({KeyFilter(k)});
   }
 
-  bytes ModuleFilter::to_bytes() const {
-    unsigned buffer_size = m_key_list.total_size();
+  unsigned ModuleFilter::byte_size() const {
+    unsigned buffer_size = m_key_list.byte_size();
     if(m_raw_bytes_list.count())
-      buffer_size += m_raw_bytes_list.total_size();
+      buffer_size += m_raw_bytes_list.byte_size();
     if(m_title_list.count())
-      buffer_size += m_title_list.total_size();
+      buffer_size += m_title_list.byte_size();
 
-    bytes buffer(buffer_size);
+    return buffer_size;
+  }
+
+  bytes ModuleFilter::to_bytes() const {
+    bytes buffer(byte_size());
     OutputMemoryStream stream(buffer);
     if(m_raw_bytes_list.count()) {
       bytes rbl_bytes = m_raw_bytes_list.to_bytes();
@@ -148,22 +143,13 @@ namespace streetpass::cec {
     return s;
   }
 
-  ModuleFilter::RawBytesFilter ModuleFilter::RawBytesFilter::from_bytes(InputMemoryStream& stream) {
+  ModuleFilter::RawBytesFilter ModuleFilter::RawBytesFilter::from_stream(InputMemoryStream& stream) {
     ModuleFilter::RawBytesFilter filter;
     if(!stream.can_read(sizeof(filter.m_internal)))
       throw "bad mve";
     stream.read(&filter.m_internal, sizeof(filter.m_internal));
 
     return filter;
-  }
-
-  ModuleFilter::RawBytesFilter ModuleFilter::RawBytesFilter::from_bytes(const uint8_t* buffer, uint32_t size) {
-    InputMemoryStream stream(buffer, size);
-    return from_bytes(stream);
-  }
-
-  ModuleFilter::RawBytesFilter ModuleFilter::RawBytesFilter::from_bytes(bytes const& buffer) {
-    return from_bytes(buffer.data(), buffer.size()) ;
   }
 
   ModuleFilter::RawBytesFilter::RawBytesFilter(bytes const& rb) {
@@ -181,7 +167,7 @@ namespace streetpass::cec {
     std::memcpy(m_internal.raw_bytes, rb.data(), rb.size());
   }
 
-  unsigned ModuleFilter::RawBytesFilter::total_size() const {
+  unsigned ModuleFilter::RawBytesFilter::byte_size() const {
     return sizeof(m_internal);
   }
 
@@ -215,22 +201,13 @@ namespace streetpass::cec {
     return s;
   }
 
-  ModuleFilter::TitleFilter::MVE ModuleFilter::TitleFilter::MVE::from_bytes(InputMemoryStream& stream) {
+  ModuleFilter::TitleFilter::MVE ModuleFilter::TitleFilter::MVE::from_stream(InputMemoryStream& stream) {
     MVE mve;
     if(!stream.can_read(sizeof(mve.m_internal)))
       throw "bad mve";
     stream.read(&mve.m_internal, sizeof(mve.m_internal));
 
     return mve;
-  }
-
-  ModuleFilter::TitleFilter::MVE ModuleFilter::TitleFilter::MVE::from_bytes(const uint8_t* buffer, uint32_t size) {
-    InputMemoryStream stream(buffer, size);
-    return from_bytes(stream);
-  }
-
-  ModuleFilter::TitleFilter::MVE ModuleFilter::TitleFilter::MVE::from_bytes(bytes const& buffer) {
-    return from_bytes(buffer.data(), buffer.size()) ;
   }
 
   ModuleFilter::TitleFilter::MVE::MVE(uint8_t m, uint8_t v, uint8_t e) {
@@ -288,7 +265,7 @@ namespace streetpass::cec {
     return s;
   }
 
-  ModuleFilter::TitleFilter ModuleFilter::TitleFilter::from_bytes(InputMemoryStream& stream) {
+  ModuleFilter::TitleFilter ModuleFilter::TitleFilter::from_stream(InputMemoryStream& stream) {
     TitleFilter filter;
     if(!stream.can_read(sizeof(filter.m_internal)))
       throw "bad title filter";
@@ -299,21 +276,11 @@ namespace streetpass::cec {
 
     uint8_t mve_count = filter.m_internal.number_mve;
     while(mve_count) {
-      filter.m_mve_list.push_back(MVE::from_bytes(stream));
+      filter.m_mve_list.push_back(MVE::from_stream(stream));
       mve_count--;
     }
 
     return filter;
-  }
-
-
-  ModuleFilter::TitleFilter ModuleFilter::TitleFilter::from_bytes(const uint8_t* buffer, uint32_t size) {
-    InputMemoryStream stream(buffer, size);
-    return from_bytes(stream);
-  }
-
-  ModuleFilter::TitleFilter ModuleFilter::TitleFilter::from_bytes(bytes const& buffer) {
-    return from_bytes(buffer.data(), buffer.size());
   }
 
   ModuleFilter::TitleFilter::TitleFilter(tid_type tid, send_mode_t mode, std::vector<MVE> list) {
@@ -350,8 +317,8 @@ namespace streetpass::cec {
     m_internal.number_mve = mve_list.size();
   }
 
-  unsigned ModuleFilter::TitleFilter::total_size() const {
-    return sizeof(m_internal) + m_mve_list.size() * ModuleFilter::TitleFilter::MVE::static_size();
+  unsigned ModuleFilter::TitleFilter::byte_size() const {
+    return sizeof(m_internal) + m_mve_list.size() * ModuleFilter::TitleFilter::MVE::fixed_byte_size();
   }
 
   bool ModuleFilter::TitleFilter::match(ModuleFilter::TitleFilter const& other) const {
@@ -372,7 +339,7 @@ namespace streetpass::cec {
   }
 
   bytes ModuleFilter::TitleFilter::to_bytes() const {
-    bytes buffer(sizeof(m_internal) + m_mve_list.size() * ModuleFilter::TitleFilter::MVE::static_size());
+    bytes buffer(sizeof(m_internal) + m_mve_list.size() * ModuleFilter::TitleFilter::MVE::fixed_byte_size());
     OutputMemoryStream stream(buffer);
     stream.write(m_internal);
 
@@ -401,22 +368,13 @@ namespace streetpass::cec {
     return s;
   }
 
-  ModuleFilter::KeyFilter ModuleFilter::KeyFilter::from_bytes(InputMemoryStream& stream) {
+  ModuleFilter::KeyFilter ModuleFilter::KeyFilter::from_stream(InputMemoryStream& stream) {
     KeyFilter filter;
     if(!stream.can_read(sizeof(filter.m_internal)))
       throw "bad key filter";
     stream.read(&filter.m_internal, sizeof(filter.m_internal));
 
     return filter;
-  }
-
-  ModuleFilter::KeyFilter ModuleFilter::KeyFilter::from_bytes(const uint8_t* buffer, uint32_t size) {
-    InputMemoryStream stream(buffer, size);
-    return from_bytes(stream);
-  }
-
-  ModuleFilter::KeyFilter ModuleFilter::KeyFilter::from_bytes(bytes const& buffer) {
-    return from_bytes(buffer.data(), buffer.size());
   }
 
   ModuleFilter::KeyFilter::KeyFilter(key_type const& k) {
@@ -433,7 +391,7 @@ namespace streetpass::cec {
     std::memcpy(m_internal.key, k.data(), sizeof(m_internal.key));
   }
 
-  unsigned ModuleFilter::KeyFilter::total_size() const {
+  unsigned ModuleFilter::KeyFilter::byte_size() const {
     return sizeof(m_internal);
   }
 
@@ -460,7 +418,7 @@ namespace streetpass::cec {
   }
 
   template<class T>
-  ModuleFilter::FilterList<T> ModuleFilter::FilterList<T>::from_bytes(InputMemoryStream& stream) {
+  ModuleFilter::FilterList<T> ModuleFilter::FilterList<T>::from_stream(InputMemoryStream& stream) {
     ModuleFilter::FilterList<T> filter_list;
     if(!stream.can_read(sizeof(filter_list.m_internal)))
       throw "bad list header";
@@ -472,23 +430,12 @@ namespace streetpass::cec {
 
     InputMemoryStream elt_steam(stream.pointer(), filter_list.m_internal.length);
     while(elt_steam.size() > 0) {
-      T t = T::from_bytes(elt_steam);
+      T t = T::from_stream(elt_steam);
       filter_list.m_list.push_back(t);
-      stream.skip(t.total_size());
+      stream.skip(t.byte_size());
     }
 
     return filter_list;
-  }
-
-  template<class T>
-  ModuleFilter::FilterList<T> ModuleFilter::FilterList<T>::from_bytes(const uint8_t* buffer, uint32_t size) {
-    InputMemoryStream stream(buffer, size);
-    return from_bytes(stream);
-  }
-
-  template<class T>
-  ModuleFilter::FilterList<T> ModuleFilter::FilterList<T>::from_bytes(bytes const& buffer) {
-    return from_bytes(buffer.data(), buffer.size());
   }
 
   template<class T>
@@ -517,10 +464,10 @@ namespace streetpass::cec {
   }
 
   template<class T>
-  unsigned ModuleFilter::FilterList<T>::total_size() const {
+  unsigned ModuleFilter::FilterList<T>::byte_size() const {
     unsigned size = sizeof(m_internal);
     for(T const& e: m_list)
-      size += e.total_size();
+      size += e.byte_size();
     return size;
   }
 
@@ -531,12 +478,12 @@ namespace streetpass::cec {
 
   template<class T>
   void ModuleFilter::FilterList<T>::filters(std::vector<T> const& filters) {
-    uint8_t total_size = 0;
+    uint8_t byte_size = 0;
     for(T filter: filters) {
-      unsigned filter_size = filter.total_size();
-      if(filter_size + total_size > total_size)
+      unsigned filter_size = filter.byte_size();
+      if(filter_size + byte_size > byte_size)
         throw std::length_error("Byte size of filter list cannot exceed 0xFF");
-      total_size += filter.total_size();
+      byte_size += filter.byte_size();
     }
     m_list = filters;
   }
