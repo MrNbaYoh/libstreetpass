@@ -5,6 +5,7 @@
 #include "iface/streetpass.hpp"
 #include <tins/tins.h>
 #include "cec/module_filter.hpp"
+#include "cec/cec.hpp"
 
 using namespace streetpass;
 
@@ -34,7 +35,7 @@ int main(int argc, char** argv) {
       i = (i+1)%16;
     }
     try {
-      cec::ModuleFilter test = cec::ModuleFilter::from_bytes(d);
+      cec::ModuleFilter test = cec::Parser<cec::ModuleFilter>::from_bytes(d);
       i = 0;
       for(auto b: test.to_bytes()) {
         if(i%16 == 0)
