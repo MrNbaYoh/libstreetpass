@@ -11,6 +11,12 @@ namespace streetpass::iface {
 
 const std::string StreetpassInterface::SSID("Nintendo_3DS_continuous_scan_000");
 const Tins::HWAddress<3> StreetpassInterface::OUI("00:1f:32");
+const Tins::Dot11ManagementFrame::rates_type
+    StreetpassInterface::SUPPORTED_RATES({1.0, 2.0, 5.5, 6.0, 9.0, 11.0, 12.0,
+                                          18.0});
+const Tins::Dot11ManagementFrame::rates_type
+    StreetpassInterface::EXT_SUPPORTED_RATES({24.0, 36.0, 48.0, 54.0});
+const int StreetpassInterface::CHANNEL_FREQ = 2412;
 
 StreetpassInterface::StreetpassInterface(PhysicalInterface const& phys,
                                          std::string const& name) {
@@ -30,7 +36,8 @@ StreetpassInterface::StreetpassInterface(PhysicalInterface const& phys,
 
   if (!is_up()) up();
 
-  nl80211::commands::join_ibss(nlsock, m_index, SSID, 2412, true, w.mac);
+  nl80211::commands::join_ibss(nlsock, m_index, SSID, CHANNEL_FREQ, true,
+                               w.mac);
 }
 
 namespace {

@@ -26,5 +26,8 @@ class StreetpassInterface : public VirtualInterface {
 
   static const std::string SSID;
   static const Tins::HWAddress<3> OUI;
+  static const Tins::Dot11ManagementFrame::rates_type SUPPORTED_RATES;
+  static const Tins::Dot11ManagementFrame::rates_type EXT_SUPPORTED_RATES;
+  static const int CHANNEL_FREQ;
 };
 }  // namespace streetpass::iface
