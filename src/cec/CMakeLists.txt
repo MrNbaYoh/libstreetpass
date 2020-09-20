@@ -8,6 +8,7 @@ add_library(streetpass::cec ALIAS StreetpassCec)
 target_sources(StreetpassCec
     PRIVATE
         module_filter.cpp
+        send_mode.cpp
     )
 
 target_include_directories(StreetpassCec

@@ -21,38 +21,6 @@ const char* filter_list_marker_to_string(filter_list_marker_t marker) {
   }
 }
 
-const char* send_mode_to_string(send_mode_t mode) {
-  switch (mode) {
-    case send_mode_t::EXCHANGE:
-      return "EXCHANGE";
-    case send_mode_t::RECV_ONLY:
-      return "RECV_ONLY";
-    case send_mode_t::SEND_ONLY:
-      return "SEND_ONLY";
-    case send_mode_t::SEND_RECV:
-      return "SEND_RECV";
-    default:
-      return "invalid";
-  }
-}
-
-bool send_mode_match(send_mode_t mode1, send_mode_t mode2) {
-  if (mode2 > send_mode_t::SEND_RECV) return false;
-
-  switch (mode1) {
-    case send_mode_t::EXCHANGE:
-      return mode2 == send_mode_t::EXCHANGE;
-    case send_mode_t::RECV_ONLY:
-      return mode2 == send_mode_t::SEND_ONLY || mode2 == send_mode_t::SEND_RECV;
-    case send_mode_t::SEND_ONLY:
-      return mode2 == send_mode_t::RECV_ONLY || mode2 == send_mode_t::SEND_RECV;
-    case send_mode_t::SEND_RECV:
-      return mode2 != send_mode_t::EXCHANGE;
-    default:
-      return false;
-  }
-}
-
 ModuleFilter ModuleFilter::from_stream(InputMemoryStream& stream) {
   ModuleFilter filter;
   bool found_raw_bytes_list = false;
@@ -281,7 +249,7 @@ ModuleFilter::TitleFilter ModuleFilter::TitleFilter::from_stream(
   if (!stream.can_read(sizeof(filter.m_internal))) throw "bad title filter";
 
   stream.read(&filter.m_internal, sizeof(filter.m_internal));
-  if (filter.m_internal.send_mode > send_mode_t::SEND_RECV)
+  if (filter.m_internal.send_mode > SendMode::SEND_RECV)
     throw "bad send mode";
 
   uint8_t mve_count = filter.m_internal.number_mve;
@@ -293,7 +261,7 @@ ModuleFilter::TitleFilter ModuleFilter::TitleFilter::from_stream(
   return filter;
 }
 
-ModuleFilter::TitleFilter::TitleFilter(tid_type tid, send_mode_t mode,
+ModuleFilter::TitleFilter::TitleFilter(tid_type tid, SendMode mode,
                                        std::vector<MVE> list) {
   title_id(tid);
   send_mode(mode);
@@ -308,11 +276,11 @@ void ModuleFilter::TitleFilter::title_id(tid_type tid) {
   m_internal.title_id = Endian::host_to_be(tid);
 }
 
-send_mode_t ModuleFilter::TitleFilter::send_mode() const {
+SendMode ModuleFilter::TitleFilter::send_mode() const {
   return m_internal.send_mode;
 }
 
-void ModuleFilter::TitleFilter::send_mode(send_mode_t mode) {
+void ModuleFilter::TitleFilter::send_mode(SendMode mode) {
   m_internal.send_mode = mode;
 }
 
@@ -338,7 +306,7 @@ unsigned ModuleFilter::TitleFilter::byte_size() const {
 bool ModuleFilter::TitleFilter::match(
     ModuleFilter::TitleFilter const& other) const {
   if (this->title_id() != other.title_id()) return false;
-  if (!send_mode_match(this->send_mode(), other.send_mode())) return false;
+  if (!this->send_mode().match(other.send_mode())) return false;
 
   std::vector<MVE> const& own_list = this->mve_list();
   std::vector<MVE> const& other_list = other.mve_list();
@@ -370,7 +338,7 @@ std::ostream& operator<<(std::ostream& s, const ModuleFilter::TitleFilter& e) {
   ss << "Title: ";
   ss << "id=" << std::hex << std::setfill('0') << std::setw(8) << e.title_id()
      << ", send_mode=" << std::setw(2) << static_cast<unsigned>(e.send_mode())
-     << "(" << send_mode_to_string(e.send_mode()) << ")";
+     << "(" << e.send_mode().to_string() << ")";
   if (e.m_mve_list.size()) {
     ss << ", mve_list=";
     // TODO: better printer for MVE list
