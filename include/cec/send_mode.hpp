@@ -16,9 +16,9 @@ class SendMode {
 
   operator send_mode() const { return m_value; }
   explicit operator bool() = delete;
+  explicit operator std::string() const;
 
   bool match(SendMode const& other) const;
-  std::string to_string() const;
 
  private:
   send_mode m_value;

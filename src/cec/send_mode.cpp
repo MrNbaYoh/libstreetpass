@@ -18,7 +18,7 @@ namespace streetpass::cec {
     }
   }
 
-  std::string SendMode::to_string() const {
+  SendMode::operator std::string() const {
     switch (m_value) {
       case EXCHANGE:
         return "EXCHANGE";
