@@ -1,5 +1,7 @@
 #include "cec/send_mode.hpp"
 
+#include <iomanip>
+
 namespace streetpass::cec {
   bool SendMode::match(SendMode const& other) const {
     switch (m_value) {
@@ -31,5 +33,12 @@ namespace streetpass::cec {
       default:
         return "invalid";
     }
+  }
+
+  std::ostream& operator<<(std::ostream& s, const SendMode& m) {
+    std::stringstream ss;
+    ss << std::setfill('0');
+    ss << std::hex << std::string(m) << "(" << std::setw(2) << m.m_value << ")";
+    return s << ss.str();
   }
 }  // namespace streetpass::cec

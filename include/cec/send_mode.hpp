@@ -20,6 +20,8 @@ class SendMode {
 
   bool match(SendMode const& other) const;
 
+  friend std::ostream& operator<<(std::ostream& s, const SendMode& m);
+
  private:
   send_mode m_value;
 };

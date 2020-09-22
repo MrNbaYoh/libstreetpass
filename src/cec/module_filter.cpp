@@ -337,8 +337,7 @@ std::ostream& operator<<(std::ostream& s, const ModuleFilter::TitleFilter& e) {
   std::stringstream ss;
   ss << "Title: ";
   ss << "id=" << std::hex << std::setfill('0') << std::setw(8) << e.title_id()
-     << ", send_mode=" << std::setw(2) << static_cast<unsigned>(e.send_mode())
-     << "(" << std::string(e.send_mode()) << ")";
+     << ", send_mode=" << e.send_mode();
   if (e.m_mve_list.size()) {
     ss << ", mve_list=";
     // TODO: better printer for MVE list
