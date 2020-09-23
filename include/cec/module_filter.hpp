@@ -15,14 +15,28 @@ using Tins::small_uint;
 using Tins::Memory::InputMemoryStream;
 
 namespace streetpass::cec {
-enum class filter_list_marker_t : uint8_t {
-  RAW_BYTES_FILTER = 0x0,
-  TITLE_FILTER = 0x1,
-  KEY_FILTER = 0xF
-};
-
 class ModuleFilter : public ICecFormat {
  public:
+  class FilterListMarker {
+   public:
+    enum filter_list_marker : uint8_t {
+      RAW_BYTES_FILTER = 0x0,
+      TITLE_FILTER = 0x1,
+      KEY_FILTER = 0xF
+    };
+
+    constexpr FilterListMarker(filter_list_marker marker) : m_value(marker) {}
+
+    operator filter_list_marker() const { return m_value; }
+    explicit operator bool() = delete;
+    explicit operator std::string() const;
+
+    friend std::ostream& operator<<(std::ostream& s, const FilterListMarker& m);
+
+   private:
+    filter_list_marker m_value;
+  };
+
   template <typename T>
   class Filter : public ICecFormat {
    public:
@@ -155,9 +169,9 @@ class ModuleFilter : public ICecFormat {
 #if __BYTE_ORDER__ == \
     __ORDER_LITTLE_ENDIAN__  // bitfield layout depends on endianness
     uint8_t flags : 4;
-    filter_list_marker_t marker : 4;
+    FilterListMarker::filter_list_marker marker : 4;
 #else
-    filter_list_marker_t marker : 4;
+    FilterListMarker::filter_list_marker marker : 4;
     uint8_t flags : 4;
 #endif
     uint8_t length;
@@ -169,7 +183,7 @@ class ModuleFilter : public ICecFormat {
                   "T should inherit from Filter");
 
    public:
-    static const filter_list_marker_t MARKER;
+    static const FilterListMarker MARKER;
 
     static FilterList<T> from_stream(InputMemoryStream& stream);
 

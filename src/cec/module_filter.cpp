@@ -10,15 +10,25 @@ using Tins::Memory::InputMemoryStream;
 using Tins::Memory::OutputMemoryStream;
 
 namespace streetpass::cec {
-const char* filter_list_marker_to_string(filter_list_marker_t marker) {
-  switch (marker) {
-    case filter_list_marker_t::TITLE_FILTER:
+ModuleFilter::FilterListMarker::operator std::string() const {
+  switch (m_value) {
+    case RAW_BYTES_FILTER:
+      return "RAW_BYTES_FILTER";
+    case TITLE_FILTER:
       return "TITLE_FILTER";
-    case filter_list_marker_t::KEY_FILTER:
+    case KEY_FILTER:
       return "KEY_FILTER";
     default:
       return "invalid";
   }
+}
+
+std::ostream& operator<<(std::ostream& s,
+                         const ModuleFilter::FilterListMarker& m) {
+  std::stringstream ss;
+  ss << std::setfill('0');
+  ss << std::hex << std::string(m) << "(" << std::setw(2) << m.m_value << ")";
+  return s << ss.str();
 }
 
 ModuleFilter ModuleFilter::from_stream(InputMemoryStream& stream) {
@@ -31,15 +41,15 @@ ModuleFilter ModuleFilter::from_stream(InputMemoryStream& stream) {
     const filter_list_header* header =
         reinterpret_cast<const filter_list_header*>(stream.pointer());
 
-    if (header->marker == filter_list_marker_t::RAW_BYTES_FILTER) {
+    if (header->marker == ModuleFilter::FilterListMarker::RAW_BYTES_FILTER) {
       if (found_raw_bytes_list) throw "bad - already found raw bytes list";
       filter.m_raw_bytes_list = FilterList<RawBytesFilter>::from_stream(stream);
       found_raw_bytes_list = true;
-    } else if (header->marker == filter_list_marker_t::TITLE_FILTER) {
+    } else if (header->marker == ModuleFilter::FilterListMarker::TITLE_FILTER) {
       if (found_title_list) throw "bad - already found title list";
       filter.m_title_list = FilterList<TitleFilter>::from_stream(stream);
       found_title_list = true;
-    } else if (header->marker == filter_list_marker_t::KEY_FILTER) {
+    } else if (header->marker == ModuleFilter::FilterListMarker::KEY_FILTER) {
       if (found_key_list) throw "bad - already found key list";
       filter.m_key_list = FilterList<KeyFilter>::from_stream(stream);
       found_key_list = true;
@@ -486,10 +496,8 @@ std::ostream& operator<<(std::ostream& s,
   std::stringstream ss;
   ss << "FilterList: ";
   ss << std::hex << std::setfill('0');
-  ss << "marker=" << std::setw(2)
-     << static_cast<unsigned>(ModuleFilter::FilterList<E>::MARKER) << "("
-     << filter_list_marker_to_string(ModuleFilter::FilterList<E>::MARKER)
-     << "), ";
+  ss << "marker=" << std::setw(2) << ModuleFilter::FilterList<E>::MARKER
+     << ", ";
   ss << "flags=" << std::setw(2) << static_cast<unsigned>(l.flags()) << ", ";
   ss << "length=" << std::setw(2) << static_cast<unsigned>(l.m_internal.length)
      << std::endl;
@@ -500,17 +508,17 @@ std::ostream& operator<<(std::ostream& s,
 }
 
 template <>
-const filter_list_marker_t
+const ModuleFilter::FilterListMarker
     ModuleFilter::FilterList<ModuleFilter::RawBytesFilter>::MARKER =
-        filter_list_marker_t::RAW_BYTES_FILTER;
+        ModuleFilter::FilterListMarker::RAW_BYTES_FILTER;
 template <>
-const filter_list_marker_t
+const ModuleFilter::FilterListMarker
     ModuleFilter::FilterList<ModuleFilter::TitleFilter>::MARKER =
-        filter_list_marker_t::TITLE_FILTER;
+        ModuleFilter::FilterListMarker::TITLE_FILTER;
 template <>
-const filter_list_marker_t
+const ModuleFilter::FilterListMarker
     ModuleFilter::FilterList<ModuleFilter::KeyFilter>::MARKER =
-        filter_list_marker_t::KEY_FILTER;
+        ModuleFilter::FilterListMarker::KEY_FILTER;
 
 template class ModuleFilter::FilterList<ModuleFilter::RawBytesFilter>;
 template class ModuleFilter::FilterList<ModuleFilter::TitleFilter>;
