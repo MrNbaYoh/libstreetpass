@@ -249,8 +249,7 @@ ModuleFilter::TitleFilter ModuleFilter::TitleFilter::from_stream(
   if (!stream.can_read(sizeof(filter.m_internal))) throw "bad title filter";
 
   stream.read(&filter.m_internal, sizeof(filter.m_internal));
-  if (filter.m_internal.send_mode > SendMode::SEND_RECV)
-    throw "bad send mode";
+  if (filter.m_internal.send_mode > SendMode::SEND_RECV) throw "bad send mode";
 
   uint8_t mve_count = filter.m_internal.number_mve;
   while (mve_count) {
@@ -416,17 +415,7 @@ ModuleFilter::FilterList<T> ModuleFilter::FilterList<T>::from_stream(
 
 template <class T>
 ModuleFilter::FilterList<T>::FilterList() : m_internal{} {
-  marker(MARKER);
-}
-
-template <class T>
-filter_list_marker_t ModuleFilter::FilterList<T>::marker() const {
-  return m_internal.marker;
-}
-
-template <class T>
-void ModuleFilter::FilterList<T>::marker(filter_list_marker_t marker) {
-  m_internal.marker = marker;
+  m_internal.marker = MARKER;
 }
 
 template <class T>
@@ -497,8 +486,10 @@ std::ostream& operator<<(std::ostream& s,
   std::stringstream ss;
   ss << "FilterList: ";
   ss << std::hex << std::setfill('0');
-  ss << "marker=" << std::setw(2) << static_cast<unsigned>(l.marker()) << "("
-     << filter_list_marker_to_string(l.marker()) << "), ";
+  ss << "marker=" << std::setw(2)
+     << static_cast<unsigned>(ModuleFilter::FilterList<E>::MARKER) << "("
+     << filter_list_marker_to_string(ModuleFilter::FilterList<E>::MARKER)
+     << "), ";
   ss << "flags=" << std::setw(2) << static_cast<unsigned>(l.flags()) << ", ";
   ss << "length=" << std::setw(2) << static_cast<unsigned>(l.m_internal.length)
      << std::endl;

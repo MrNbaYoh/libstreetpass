@@ -175,8 +175,6 @@ class ModuleFilter : public ICecFormat {
 
     FilterList();
 
-    filter_list_marker_t marker() const;
-    void marker(filter_list_marker_t marker);
     small_uint<4> flags() const;
     void flags(small_uint<4> flags);
     std::vector<T> const& filters() const;
