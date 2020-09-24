@@ -52,9 +52,9 @@ bool is_streetpass_scan_probereq(Tins::Dot11ProbeRequest const& probereq) {
 }
 }  // namespace
 
-std::map<Tins::HWAddress<6>, std::vector<std::uint8_t>>
-StreetpassInterface::scan(unsigned int ms_duration) {
-  std::map<Tins::HWAddress<6>, std::vector<std::uint8_t>> results;
+std::map<Tins::HWAddress<6>, cec::ModuleFilter> StreetpassInterface::scan(
+    unsigned int ms_duration) {
+  std::map<Tins::HWAddress<6>, cec::ModuleFilter> results;
   if (ms_duration == 0) return results;
 
   // TODO: handle exception
@@ -74,9 +74,24 @@ StreetpassInterface::scan(unsigned int ms_duration) {
     }
 
     Tins::Dot11ProbeRequest probereq(data.data(), data.size());
-    if (is_streetpass_scan_probereq(probereq)) {
-      std::cout << "-- Found Streetpass Probe Request --" << std::endl;
-      res->emplace(probereq.addr2(), probereq.vendor_specific().data);
+    if (!is_streetpass_scan_probereq(probereq)) return;
+
+    std::cout << "-- Found Streetpass Probe Request --" << std::endl;
+    auto vendor_specific_data = probereq.vendor_specific().data;
+
+    // TODO: first byte of vendor specific data is always 0x01?
+    if (!vendor_specific_data.size() || vendor_specific_data.at(1) != 0x01)
+      return;
+
+    auto module_filter_bytes = &vendor_specific_data[1];
+    unsigned module_filter_bytes_size = vendor_specific_data.size() - 1;
+    try {
+      cec::ModuleFilter module_filter =
+          cec::Parser<cec::ModuleFilter>::from_bytes(module_filter_bytes,
+                                                     module_filter_bytes_size);
+      res->emplace(probereq.addr2(), module_filter);
+    } catch (...) {
+      return;
     }
   };
 

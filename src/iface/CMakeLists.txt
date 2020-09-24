@@ -20,4 +20,4 @@ target_include_directories(StreetpassIface
     )
 
 target_include_directories(StreetpassIface PRIVATE ${CMAKE_SOURCE_DIR}/externals/libtins/include)
-target_link_libraries(StreetpassIface PRIVATE tins streetpass::nl80211)
+target_link_libraries(StreetpassIface PRIVATE tins streetpass::nl80211 streetpass::cec)

@@ -4,6 +4,7 @@
 
 #include <string>
 
+#include "cec/module_filter.hpp"
 #include "iface/physical.hpp"
 #include "iface/virtual.hpp"
 #include "nl80211/socket.hpp"
@@ -21,7 +22,7 @@ class StreetpassInterface : public VirtualInterface {
   StreetpassInterface(StreetpassInterface&&) = delete;
   StreetpassInterface& operator=(StreetpassInterface&&) = delete;
 
-  std::map<Tins::HWAddress<6>, std::vector<std::uint8_t>> scan(
+  std::map<Tins::HWAddress<6>, cec::ModuleFilter> scan(
       unsigned int ms_duration);
 
   static const std::string SSID;
