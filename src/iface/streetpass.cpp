@@ -53,7 +53,9 @@ bool is_streetpass_scan_probereq(Tins::Dot11ProbeRequest const& probereq) {
 }  // namespace
 
 std::map<Tins::HWAddress<6>, cec::ModuleFilter> StreetpassInterface::scan(
-    unsigned int ms_duration) {
+    unsigned int ms_duration,
+    std::function<bool(Tins::HWAddress<6> const&,
+                       cec::ModuleFilter const&)> const& filter) {
   std::map<Tins::HWAddress<6>, cec::ModuleFilter> results;
   if (ms_duration == 0) return results;
 
@@ -64,8 +66,7 @@ std::map<Tins::HWAddress<6>, cec::ModuleFilter> StreetpassInterface::scan(
       Tins::Dot11::Types::MANAGEMENT |
           (Tins::Dot11::ManagementSubtypes::PROBE_REQ << 4));
 
-  auto handler = [](nl80211::MessageParser& msg, void* arg) {
-    auto res = static_cast<decltype(results)*>(arg);
+  auto handler = [&filter, &results](nl80211::MessageParser& msg, void*) {
     std::vector<std::uint8_t> data;
     try {
       data = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_FRAME).value();
@@ -80,22 +81,44 @@ std::map<Tins::HWAddress<6>, cec::ModuleFilter> StreetpassInterface::scan(
     auto vendor_specific_data = probereq.vendor_specific().data;
 
     // TODO: first byte of vendor specific data is always 0x01?
-    if (!vendor_specific_data.size() || vendor_specific_data.at(1) != 0x01)
+    if (vendor_specific_data.size() == 0 || vendor_specific_data.at(0) != 0x01)
       return;
 
     auto module_filter_bytes = &vendor_specific_data[1];
     unsigned module_filter_bytes_size = vendor_specific_data.size() - 1;
     try {
+      auto peer_addr = probereq.addr2();
       cec::ModuleFilter module_filter =
           cec::Parser<cec::ModuleFilter>::from_bytes(module_filter_bytes,
                                                      module_filter_bytes_size);
-      res->emplace(probereq.addr2(), module_filter);
+      if (filter(peer_addr, module_filter))
+        results.emplace(peer_addr, module_filter);
     } catch (...) {
       return;
     }
   };
 
-  scan_sock.recv_messages(handler, &results, true, ms_duration);
+  scan_sock.recv_messages(handler, nullptr, true, ms_duration);
   return results;
 }
+
+std::map<Tins::HWAddress<6>, cec::ModuleFilter> StreetpassInterface::scan(
+    unsigned int ms_duration) {
+  auto no_filter = [](Tins::HWAddress<6> const&, cec::ModuleFilter const&) {
+    return true;
+  };
+
+  return scan(ms_duration, no_filter);
+}
+
+std::map<Tins::HWAddress<6>, cec::ModuleFilter> StreetpassInterface::scan(
+    unsigned int ms_duration, cec::ModuleFilter const& module_filter) {
+  auto filter_match = [module_filter](Tins::HWAddress<6> const&,
+                                      cec::ModuleFilter const& other) {
+    return module_filter.match(other);
+  };
+
+  return scan(ms_duration, filter_match);
+}
+
 }  // namespace streetpass::iface
