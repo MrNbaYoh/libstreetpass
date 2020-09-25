@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
     std::cout << hwaddr << std::endl;
     std::cout << module_filter << std::endl;
   }*/
-  /*std::vector<uint8_t> d = {0x11, 0x0D, 0x00, 0x05, 0x16, 0x00, 0x31,
+  std::vector<uint8_t> d = {0x11, 0x0D, 0x00, 0x05, 0x16, 0x00, 0x31,
                             0xFF, 0xEE, 0xDD, 0x00, 0x02, 0x08, 0x00,
                             0x00, 0xf0, 0x08, 0x68, 0xc7, 0x27, 0x39,
                             0x0e, 0x2f, 0xbb, 0x04};
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
     std::cout << std::endl << test << std::endl;
   } catch (const char* c) {
     std::cerr << c << std::endl;
-  }*/
+  }
   //}
   return 0;
 }

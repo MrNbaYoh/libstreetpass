@@ -9,8 +9,10 @@
 #include <vector>
 
 #include "cec/cec.hpp"
+#include "cec/endian_types.hpp"
 #include "cec/send_mode.hpp"
 
+using namespace streetpass::cec::endian_types;
 using Tins::small_uint;
 using Tins::Memory::InputMemoryStream;
 
@@ -61,8 +63,8 @@ class ModuleFilter : public ICecFormat {
     RawBytesFilter() = default;
 
     struct raw_filter {
-      uint8_t cmp_length;
-      uint8_t raw_bytes[16];
+      u8 cmp_length;
+      u8 raw_bytes[16];
     };
 
     raw_filter m_internal;
@@ -98,9 +100,9 @@ class ModuleFilter : public ICecFormat {
       MVE() = default;
 
       struct title_filter_mve {
-        uint8_t mask;
-        uint8_t value;
-        uint8_t expectation;
+        u8 mask;
+        u8 value;
+        u8 expectation;
       } __attribute__((__packed__));
 
       title_filter_mve m_internal;
@@ -126,14 +128,14 @@ class ModuleFilter : public ICecFormat {
     TitleFilter() = default;
 
     struct title_filter_header {
-      uint32_t title_id;  // this one is big endian
+      u32be title_id;  // this one is big endian
 #if __BYTE_ORDER__ == \
-    __ORDER_LITTLE_ENDIAN__    // bitfield layout depends on endianness
-      uint8_t number_mve : 4;  // number of mve in mve_list
+    __ORDER_LITTLE_ENDIAN__  // bitfield layout depends on endianness
+      u8 number_mve : 4;     // number of mve in mve_list
       SendMode::send_mode send_mode : 4;
 #else
       SendMode::send_mode send_mode : 4;
-      uint8_t number_mve : 4;
+      u8 number_mve : 4;
 #endif
     } __attribute__((__packed__));
 
@@ -159,7 +161,7 @@ class ModuleFilter : public ICecFormat {
     KeyFilter() = default;
 
     struct key_filter {
-      uint8_t key[8];
+      u8 key[8];
     } __attribute__((__packed__));
 
     key_filter m_internal;
@@ -168,13 +170,13 @@ class ModuleFilter : public ICecFormat {
   struct filter_list_header {
 #if __BYTE_ORDER__ == \
     __ORDER_LITTLE_ENDIAN__  // bitfield layout depends on endianness
-    uint8_t flags : 4;
+    u8 flags : 4;
     FilterListMarker::filter_list_marker marker : 4;
 #else
     FilterListMarker::filter_list_marker marker : 4;
-    uint8_t flags : 4;
+    u8 flags : 4;
 #endif
-    uint8_t length;
+    u8 length;
   } __attribute__((__packed__));
 
   template <class T>

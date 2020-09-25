@@ -1,7 +1,5 @@
 #include "cec/module_filter.hpp"
 
-#include <tins/endianness.h>
-
 #include <iomanip>
 #include <iostream>
 
@@ -185,7 +183,7 @@ std::ostream& operator<<(std::ostream& s,
   ss << "RawBytes: ";
   ss << "size=" << (int)raw_bytes.size() << ", ";
   ss << "bytes=";
-  for (uint8_t b : raw_bytes) ss << " " << (int)b;
+  for (u8 b : raw_bytes) ss << " " << (int)b;
 
   s << ss.str();
   return s;
@@ -278,11 +276,11 @@ ModuleFilter::TitleFilter::TitleFilter(tid_type tid, SendMode mode,
 }
 
 tid_type ModuleFilter::TitleFilter::title_id() const {
-  return Endian::be_to_host(m_internal.title_id);
+  return m_internal.title_id;
 }
 
 void ModuleFilter::TitleFilter::title_id(tid_type tid) {
-  m_internal.title_id = Endian::host_to_be(tid);
+  m_internal.title_id = tid;
 }
 
 SendMode ModuleFilter::TitleFilter::send_mode() const {
