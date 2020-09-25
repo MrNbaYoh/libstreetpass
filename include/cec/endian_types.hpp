@@ -11,6 +11,8 @@ enum endianness { LITTLE, BIG };
 template <typename T, endianness E>
 class EndianType {
  public:
+  constexpr EndianType() = default;
+
   constexpr EndianType(T t) {
     if constexpr (E == LITTLE) {
       m_value = host_to_le(t);
@@ -29,7 +31,7 @@ class EndianType {
 
  private:
   T m_value;
-};
+} __attribute__((__packed__));
 
 using u8 = uint8_t;
 
