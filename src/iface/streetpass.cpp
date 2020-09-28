@@ -52,12 +52,13 @@ bool is_streetpass_scan_probereq(Tins::Dot11ProbeRequest const& probereq) {
 }
 }  // namespace
 
-std::map<Tins::HWAddress<6>, cec::ModuleFilter> StreetpassInterface::scan(
+void StreetpassInterface::scan(
     unsigned int ms_duration,
     std::function<bool(Tins::HWAddress<6> const&,
-                       cec::ModuleFilter const&)> const& filter) {
-  std::map<Tins::HWAddress<6>, cec::ModuleFilter> results;
-  if (ms_duration == 0) return results;
+                       cec::ModuleFilter const&)> const& filter,
+    std::function<void(Tins::HWAddress<6> const&,
+                       cec::ModuleFilter const&)> const& callback) {
+  if (ms_duration == 0) return;
 
   // TODO: handle exception
   nl80211::Socket scan_sock;
@@ -66,7 +67,7 @@ std::map<Tins::HWAddress<6>, cec::ModuleFilter> StreetpassInterface::scan(
       Tins::Dot11::Types::MANAGEMENT |
           (Tins::Dot11::ManagementSubtypes::PROBE_REQ << 4));
 
-  auto handler = [&filter, &results](nl80211::MessageParser& msg, void*) {
+  auto handler = [filter, callback](nl80211::MessageParser& msg, void*) {
     std::vector<std::uint8_t> data;
     try {
       data = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_FRAME).value();
@@ -91,14 +92,26 @@ std::map<Tins::HWAddress<6>, cec::ModuleFilter> StreetpassInterface::scan(
       cec::ModuleFilter module_filter =
           cec::Parser<cec::ModuleFilter>::from_bytes(module_filter_bytes,
                                                      module_filter_bytes_size);
-      if (filter(peer_addr, module_filter))
-        results.emplace(peer_addr, module_filter);
+      if (filter(peer_addr, module_filter)) callback(peer_addr, module_filter);
     } catch (...) {
       return;
     }
   };
 
   scan_sock.recv_messages(handler, nullptr, true, ms_duration);
+}
+
+std::map<Tins::HWAddress<6>, cec::ModuleFilter> StreetpassInterface::scan(
+    unsigned int ms_duration,
+    std::function<bool(Tins::HWAddress<6> const&,
+                       cec::ModuleFilter const&)> const& filter) {
+  std::map<Tins::HWAddress<6>, cec::ModuleFilter> results;
+  auto callback = [&results](Tins::HWAddress<6> const& peer_addr,
+                             cec::ModuleFilter const& module_filter) {
+    results.emplace(peer_addr, module_filter);
+  };
+
+  scan(ms_duration, filter, callback);
   return results;
 }
 
