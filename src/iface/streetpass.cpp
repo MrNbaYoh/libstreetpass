@@ -53,13 +53,11 @@ bool is_streetpass_scan_probereq(Tins::Dot11ProbeRequest const& probereq) {
 }  // namespace
 
 void StreetpassInterface::scan(
-    unsigned int ms_duration,
+    unsigned int timeout,
     std::function<bool(Tins::HWAddress<6> const&,
                        cec::ModuleFilter const&)> const& filter,
     std::function<void(Tins::HWAddress<6> const&,
                        cec::ModuleFilter const&)> const& callback) {
-  if (ms_duration == 0) return;
-
   // TODO: handle exception
   nl80211::Socket scan_sock;
   nl80211::commands::register_frame(
@@ -98,40 +96,42 @@ void StreetpassInterface::scan(
     }
   };
 
-  scan_sock.recv_messages(handler, nullptr, true, ms_duration);
+  scan_sock.recv_messages(handler, nullptr, true, timeout);
 }
 
 std::map<Tins::HWAddress<6>, cec::ModuleFilter> StreetpassInterface::scan(
-    unsigned int ms_duration,
+    unsigned int timeout,
     std::function<bool(Tins::HWAddress<6> const&,
                        cec::ModuleFilter const&)> const& filter) {
   std::map<Tins::HWAddress<6>, cec::ModuleFilter> results;
+  if (timeout == 0) return results;
+
   auto callback = [&results](Tins::HWAddress<6> const& peer_addr,
                              cec::ModuleFilter const& module_filter) {
     results.emplace(peer_addr, module_filter);
   };
 
-  scan(ms_duration, filter, callback);
+  scan(timeout, filter, callback);
   return results;
 }
 
 std::map<Tins::HWAddress<6>, cec::ModuleFilter> StreetpassInterface::scan(
-    unsigned int ms_duration) {
+    unsigned int timeout) {
   auto no_filter = [](Tins::HWAddress<6> const&, cec::ModuleFilter const&) {
     return true;
   };
 
-  return scan(ms_duration, no_filter);
+  return scan(timeout, no_filter);
 }
 
 std::map<Tins::HWAddress<6>, cec::ModuleFilter> StreetpassInterface::scan(
-    unsigned int ms_duration, cec::ModuleFilter const& module_filter) {
+    unsigned int timeout, cec::ModuleFilter const& module_filter) {
   auto filter_match = [module_filter](Tins::HWAddress<6> const&,
                                       cec::ModuleFilter const& other) {
     return module_filter.match(other);
   };
 
-  return scan(ms_duration, filter_match);
+  return scan(timeout, filter_match);
 }
 
 }  // namespace streetpass::iface

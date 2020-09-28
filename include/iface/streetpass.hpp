@@ -22,19 +22,18 @@ class StreetpassInterface : public VirtualInterface {
   StreetpassInterface(StreetpassInterface&&) = delete;
   StreetpassInterface& operator=(StreetpassInterface&&) = delete;
 
-  void scan(unsigned int ms_duration,
+  void scan(unsigned int timeout,
             std::function<bool(Tins::HWAddress<6> const&,
                                cec::ModuleFilter const&)> const& filter,
             std::function<void(Tins::HWAddress<6> const&,
                                cec::ModuleFilter const&)> const& callback);
   std::map<Tins::HWAddress<6>, cec::ModuleFilter> scan(
-      unsigned int ms_duration,
+      unsigned int timeout,
       std::function<bool(Tins::HWAddress<6> const&,
                          cec::ModuleFilter const&)> const& filter);
+  std::map<Tins::HWAddress<6>, cec::ModuleFilter> scan(unsigned int timeout);
   std::map<Tins::HWAddress<6>, cec::ModuleFilter> scan(
-      unsigned int ms_duration);
-  std::map<Tins::HWAddress<6>, cec::ModuleFilter> scan(
-      unsigned int ms_duration, cec::ModuleFilter const& module_filter);
+      unsigned int timeout, cec::ModuleFilter const& module_filter);
 
   static const std::string SSID;
   static const Tins::HWAddress<3> OUI;
