@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <set>
 #include <unordered_set>
 #include <vector>
 
@@ -16,12 +17,18 @@ struct wiface {
   std::array<std::uint8_t, 6> mac;
 };
 
+struct band {
+  std::set<std::uint32_t> freqs;
+  std::set<std::uint32_t> bitrates;
+};
+
 struct wiphy {
   std::uint32_t index;
   std::string name;
   std::unordered_set<std::uint32_t> supported_cmds;
   std::unordered_set<std::uint32_t> supported_iftypes;
   std::unordered_set<std::uint32_t> supported_ciphers;
+  std::vector<band> bands;
 };
 
 namespace commands {

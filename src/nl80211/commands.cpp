@@ -29,8 +29,30 @@ void parse_wiphy_message(Attributes& msg_attrs, void* arg) {
   auto ciphers =
       msg_attrs.get<std::vector<std::uint32_t>>(NL80211_ATTR_CIPHER_SUITES)
           .value();
-  for (auto c : ciphers) {
-    w->supported_ciphers.insert(c);
+  for (auto c : ciphers) w->supported_ciphers.insert(c);
+
+  auto bands = msg_attrs.get<Attributes>(NL80211_ATTR_WIPHY_BANDS).value();
+  for (auto id : bands.types()) {
+    struct band b = {};
+
+    auto band_attrs = bands.get<Attributes>(id).value();
+    auto freqs = band_attrs.get<Attributes>(NL80211_BAND_ATTR_FREQS).value();
+    for (auto id : freqs.types()) {
+      auto freq_attrs = freqs.get<Attributes>(id).value();
+      auto freq_value =
+          freq_attrs.get<std::uint32_t>(NL80211_FREQUENCY_ATTR_FREQ).value();
+      b.freqs.insert(freq_value);
+    }
+
+    auto rates = band_attrs.get<Attributes>(NL80211_BAND_ATTR_RATES).value();
+    for (auto id : rates.types()) {
+      auto rate_attrs = rates.get<Attributes>(id).value();
+      auto rate_value =
+          rate_attrs.get<std::uint32_t>(NL80211_BITRATE_ATTR_RATE).value();
+      b.bitrates.insert(rate_value);
+    }
+
+    w->bands.push_back(b);
   }
 }
 
