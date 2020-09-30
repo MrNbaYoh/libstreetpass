@@ -42,21 +42,33 @@ Message::Message(nl80211_commands cmd, int driver_id, int flags)
   if (p_res == nullptr) throw std::bad_alloc();
 }
 
-MessageParser::MessageParser(nl_msg* nlmsg) {
+Attributes::Attributes(nl_msg* nlmsg) {
+  if (nlmsg == nullptr) throw std::invalid_argument("Message pointer is null");
   genlmsghdr* gnlh = static_cast<genlmsghdr*>(nlmsg_data(nlmsg_hdr(nlmsg)));
-  if (gnlh == nullptr) throw std::invalid_argument("Message header is null");
 
-  cmd = gnlh->cmd;
-  int ret =
-      nla_parse(m_tb_msg.data(), NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
-                genlmsg_attrlen(gnlh, 0), NULL);
-  if (ret < 0) throw NlError(ret, "Failed to parse message");
+  nlattr* current_attr = nullptr;
+  int rem = 0;
+  nla_for_each_attr(current_attr, genlmsg_attrdata(gnlh, 0),
+                    genlmsg_attrlen(gnlh, 0), rem) {
+    int attr_type = nla_type(current_attr);
+    m_attrs[attr_type] = current_attr;
+    m_attr_types.push_back(attr_type);
+  }
 }
 
-std::uint8_t MessageParser::get_command() const { return cmd; }
+Attributes::Attributes(nlattr* attr) {
+  if (attr == nullptr) throw std::invalid_argument("Attribute pointer is null");
+  nlattr* current_attr = nullptr;
+  int rem = 0;
+  nla_for_each_nested(current_attr, attr, rem) {
+    int attr_type = nla_type(current_attr);
+    m_attrs[attr_type] = current_attr;
+    m_attr_types.push_back(attr_type);
+  }
+}
 
 template <typename T>
-MessageAttribute<T>::MessageAttribute(nlattr* attr) {
+Attribute<T>::Attribute(nlattr* attr) {
   if (attr == nullptr) throw std::invalid_argument("Argument is null");
 
   m_type = nla_type(attr);
@@ -65,7 +77,13 @@ MessageAttribute<T>::MessageAttribute(nlattr* attr) {
   load_content(attr);
 }
 
-MessageAttribute<void>::MessageAttribute(nlattr* attr) {
+template <>
+Attribute<Attributes>::Attribute(nlattr* attr)
+    : m_content(Attributes(attr)),
+      m_type(nla_type(attr)),
+      m_len(nla_len(attr)) {}
+
+Attribute<void>::Attribute(nlattr* attr) {
   if (attr == nullptr) throw std::invalid_argument("Argument is null");
 
   m_type = nla_type(attr);
@@ -73,7 +91,7 @@ MessageAttribute<void>::MessageAttribute(nlattr* attr) {
 }
 
 template <typename T>
-void MessageAttribute<T>::load_content(nlattr* attr) {
+void Attribute<T>::load_content(nlattr* attr) {
   T* data = static_cast<T*>(nla_data(attr));
   if (m_len < sizeof(T))
     throw std::invalid_argument("Type length is greater than attribute length");
@@ -82,43 +100,43 @@ void MessageAttribute<T>::load_content(nlattr* attr) {
 }
 
 template <>
-void MessageAttribute<std::string>::load_content(nlattr* attr) {
+void Attribute<std::string>::load_content(nlattr* attr) {
   char* data = nla_get_string(attr);
   m_content = std::string(data, m_len);
 }
 
 template <>
-void MessageAttribute<std::vector<std::uint8_t>>::load_content(nlattr* attr) {
+void Attribute<std::vector<std::uint8_t>>::load_content(nlattr* attr) {
   std::uint8_t* data = static_cast<std::uint8_t*>(nla_data(attr));
   m_content = std::vector<std::uint8_t>(data, data + m_len);
 }
 
 template <>
-void MessageAttribute<std::vector<std::uint16_t>>::load_content(nlattr* attr) {
+void Attribute<std::vector<std::uint16_t>>::load_content(nlattr* attr) {
   std::uint16_t* data = static_cast<std::uint16_t*>(nla_data(attr));
   m_content =
       std::vector<std::uint16_t>(data, data + m_len / sizeof(std::uint16_t));
 }
 
 template <>
-void MessageAttribute<std::vector<std::uint32_t>>::load_content(nlattr* attr) {
+void Attribute<std::vector<std::uint32_t>>::load_content(nlattr* attr) {
   std::uint32_t* data = static_cast<std::uint32_t*>(nla_data(attr));
   m_content =
       std::vector<std::uint32_t>(data, data + m_len / sizeof(std::uint32_t));
 }
 
 template <>
-void MessageAttribute<bool>::load_content(nlattr* attr) {
+void Attribute<bool>::load_content(nlattr* attr) {
   m_content = nla_get_flag(attr);
 }
 
-template class MessageAttribute<bool>;
-template class MessageAttribute<std::uint8_t>;
-template class MessageAttribute<std::uint16_t>;
-template class MessageAttribute<std::uint32_t>;
-template class MessageAttribute<std::string>;
-template class MessageAttribute<std::vector<std::uint8_t>>;
-template class MessageAttribute<std::vector<std::uint16_t>>;
-template class MessageAttribute<std::vector<std::uint32_t>>;
+template class Attribute<bool>;
+template class Attribute<std::uint8_t>;
+template class Attribute<std::uint16_t>;
+template class Attribute<std::uint32_t>;
+template class Attribute<std::string>;
+template class Attribute<std::vector<std::uint8_t>>;
+template class Attribute<std::vector<std::uint16_t>>;
+template class Attribute<std::vector<std::uint32_t>>;
 
 }  // namespace streetpass::nl80211

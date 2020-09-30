@@ -65,10 +65,11 @@ void StreetpassInterface::scan(
       Tins::Dot11::Types::MANAGEMENT |
           (Tins::Dot11::ManagementSubtypes::PROBE_REQ << 4));
 
-  auto handler = [filter, callback](nl80211::MessageParser& msg, void*) {
+  auto handler = [filter, callback](nl80211::Attributes& msg_attrs, void*) {
     std::vector<std::uint8_t> data;
     try {
-      data = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_FRAME).value();
+      data =
+          msg_attrs.get<std::vector<std::uint8_t>>(NL80211_ATTR_FRAME).value();
     } catch (...) {
       return;
     }

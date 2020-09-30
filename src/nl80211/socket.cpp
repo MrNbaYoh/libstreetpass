@@ -81,9 +81,9 @@ void Socket::recv_messages() {
   if (err < 0) throw NlError(err, "An error occured while receiving messages");
 }
 
-void Socket::recv_messages(
-    std::function<void(MessageParser &, void *)> callback, void *arg,
-    bool disable_seq_check, unsigned int timeout) {
+void Socket::recv_messages(std::function<void(Attributes &, void *)> callback,
+                           void *arg, bool disable_seq_check,
+                           unsigned int timeout) {
   nl_cb *cb = nl_cb_alloc(NL_CB_DEFAULT);
   if (cb == nullptr) throw std::bad_alloc();
 
@@ -91,9 +91,9 @@ void Socket::recv_messages(
   int err = 1;
 
   auto recv_msg_cb = [callback, arg, &ex, &err](nl_msg *nlmsg) -> int {
-    MessageParser msg(nlmsg);
+    Attributes msg_attrs(nlmsg);
     try {
-      callback(msg, arg);
+      callback(msg_attrs, arg);
     } catch (...) {
       ex = std::current_exception();
       err = -1;

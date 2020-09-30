@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <string>
 
@@ -33,16 +34,18 @@ class Message {
 };
 
 template <typename T>
-class MessageAttribute {
+class Attribute {
  private:
-  std::uint16_t m_len;
-  std::uint16_t m_type;
   T m_content;
+  std::uint16_t m_type;
+  std::uint16_t m_len;
 
   void load_content(nlattr* attr);
 
  public:
-  MessageAttribute(nlattr* attr);
+  Attribute(nlattr* attr);
+
+  // TODO: move/copy operator/constructors ?
 
   inline std::uint16_t type() const { return m_type; }
 
@@ -50,63 +53,40 @@ class MessageAttribute {
 };
 
 template <>
-class MessageAttribute<void> {
+class Attribute<void> {
  private:
   std::uint16_t m_len;
   std::uint16_t m_type;
 
  public:
-  MessageAttribute(nlattr* attr);
+  Attribute(nlattr* attr);
 
   inline std::uint16_t type() const { return m_type; }
 };
 
-template <typename T>
-class MessageAttribute<std::vector<MessageAttribute<T>>> {
- private:
-  std::uint16_t m_len;
-  std::uint16_t m_type;
-  std::vector<MessageAttribute<T>> m_content;
+class Attributes {
+ public:
+  std::map<int, nlattr*> m_attrs;
+  std::vector<int> m_attr_types;
 
  public:
-  MessageAttribute(nlattr* attr) {
-    if (attr == nullptr) throw std::invalid_argument("Attribute is null");
+  Attributes(nl_msg* nlmsg);
+  Attributes(nlattr* attr);
 
-    m_type = nla_type(attr);
-    m_len = nla_len(attr);
+  // TODO: move/copy operator/constructors ?
 
-    int rem;
-    nlattr* nested;
-    nla_for_each_nested(nested, attr, rem)
-        m_content.push_back(MessageAttribute<T>(nested));
-  }
-
-  inline std::uint16_t type() const { return m_type; }
-
-  inline std::vector<MessageAttribute<T>> value() const { return m_content; }
-};
-
-class MessageParser {
- private:
-  std::array<nlattr*, NL80211_ATTR_MAX + 1> m_tb_msg;
-  std::uint8_t cmd;
-
- public:
-  MessageParser(nl_msg* nlmsg);
-
-  MessageParser(const MessageParser&) = delete;
-  MessageParser& operator=(const MessageParser&) = delete;
-  MessageParser(MessageParser&&) = delete;
-  MessageParser& operator=(MessageParser&&) = delete;
-
-  std::uint8_t get_command() const;
+  std::vector<int> const& types() const { return m_attr_types; }
 
   template <typename T>
-  MessageAttribute<T> get(nl80211_attrs attr) const {
-    if (m_tb_msg.at(attr) == nullptr)
-      throw std::invalid_argument("Attribute is null");
+  Attribute<T> get(int attr) const {
+    nlattr* attr_ptr = nullptr;
+    try {
+      attr_ptr = m_attrs.at(attr);
+    } catch (std::out_of_range&) {
+      throw std::invalid_argument("Attribute not found!");
+    }
 
-    return MessageAttribute<T>(m_tb_msg.at(attr));
+    return Attribute<T>(attr_ptr);
   }
 };
 }  // namespace streetpass::nl80211

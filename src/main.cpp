@@ -8,6 +8,7 @@
 #include "cec/module_filter.hpp"
 #include "iface/physical.hpp"
 #include "iface/streetpass.hpp"
+#include "nl80211/message.hpp"
 #include "nl80211/socket.hpp"
 
 using namespace streetpass;
@@ -15,15 +16,15 @@ using namespace streetpass;
 int main(int argc, char** argv) {
   /*cec::endian_types::u32be a = 0xAABBCCDD;
   std::cout << std::hex << a << std::endl;*/
-  /*iface::PhysicalInterface phys(3);
+  iface::PhysicalInterface phys(6);
   iface::StreetpassInterface siface = phys.setup_streetpass_interface();
   auto res = siface.scan(5000);
 
   for (auto [hwaddr, module_filter] : res) {
     std::cout << hwaddr << std::endl;
     std::cout << module_filter << std::endl;
-  }*/
-  std::vector<uint8_t> d = {0x11, 0x0D, 0x00, 0x05, 0x16, 0x00, 0x31,
+  }
+  /*std::vector<uint8_t> d = {0x11, 0x0D, 0x00, 0x05, 0x16, 0x00, 0x31,
                             0xFF, 0xEE, 0xDD, 0x00, 0x02, 0x08, 0x00,
                             0x00, 0xf0, 0x08, 0x68, 0xc7, 0x27, 0x39,
                             0x0e, 0x2f, 0xbb, 0x04};
@@ -46,7 +47,7 @@ int main(int argc, char** argv) {
     std::cout << std::endl << test << std::endl;
   } catch (const char* c) {
     std::cerr << c << std::endl;
-  }
+  }*/
   //}
   return 0;
 }

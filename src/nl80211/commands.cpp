@@ -10,42 +10,43 @@ namespace streetpass::nl80211::commands {
 
 namespace {
 
-void parse_wiphy_message(MessageParser& msg, void* arg) {
+void parse_wiphy_message(Attributes& msg_attrs, void* arg) {
   auto w = static_cast<struct wiphy*>(arg);
 
-  w->index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
-  w->name = msg.get<std::string>(NL80211_ATTR_WIPHY_NAME).value();
+  w->index = msg_attrs.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
+  w->name = msg_attrs.get<std::string>(NL80211_ATTR_WIPHY_NAME).value();
 
-  auto cmd_attrs = msg.get<std::vector<MessageAttribute<std::uint32_t>>>(
-                          NL80211_ATTR_SUPPORTED_COMMANDS)
-                       .value();
-  for (auto attr : cmd_attrs) w->supported_cmds.insert(attr.value());
+  auto cmd_attrs =
+      msg_attrs.get<Attributes>(NL80211_ATTR_SUPPORTED_COMMANDS).value();
+  for (auto attr_type : cmd_attrs.types())
+    w->supported_cmds.insert(cmd_attrs.get<std::uint32_t>(attr_type).value());
 
-  auto iftype_attrs = msg.get<std::vector<MessageAttribute<void>>>(
-                             NL80211_ATTR_SUPPORTED_IFTYPES)
-                          .value();
-  for (auto attr : iftype_attrs) w->supported_iftypes.insert(attr.type());
+  auto iftype_attrs =
+      msg_attrs.get<Attributes>(NL80211_ATTR_SUPPORTED_IFTYPES).value();
+  for (auto attr_type : iftype_attrs.types())
+    w->supported_iftypes.insert(attr_type);
 
   auto ciphers =
-      msg.get<std::vector<std::uint32_t>>(NL80211_ATTR_CIPHER_SUITES).value();
+      msg_attrs.get<std::vector<std::uint32_t>>(NL80211_ATTR_CIPHER_SUITES)
+          .value();
   for (auto c : ciphers) {
     w->supported_ciphers.insert(c);
   }
 }
 
-void parse_interface_message(MessageParser& msg, void* arg) {
+void parse_interface_message(Attributes& msg_attrs, void* arg) {
   auto w = static_cast<struct wiface*>(arg);
 
-  w->index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
-  w->wiphy = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
+  w->index = msg_attrs.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
+  w->wiphy = msg_attrs.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
   try {
-    w->name = msg.get<std::string>(NL80211_ATTR_IFNAME).value();
+    w->name = msg_attrs.get<std::string>(NL80211_ATTR_IFNAME).value();
   } catch (...) {
     w->name = "unnamed";
   }
-  w->type = msg.get<std::uint32_t>(NL80211_ATTR_IFTYPE).value();
+  w->type = msg_attrs.get<std::uint32_t>(NL80211_ATTR_IFTYPE).value();
 
-  auto mac = msg.get<std::vector<std::uint8_t>>(NL80211_ATTR_MAC).value();
+  auto mac = msg_attrs.get<std::vector<std::uint8_t>>(NL80211_ATTR_MAC).value();
   std::copy_n(mac.begin(), 6, w->mac.begin());
 }
 }  // namespace
@@ -165,11 +166,11 @@ wiphy get_wiphy(Socket& nlsock, std::uint32_t wiphy) {
 }
 
 std::vector<wiphy> get_wiphy_list(Socket& nlsock) {
-  auto resp_handler = [](MessageParser& msg, void* arg) {
+  auto resp_handler = [](Attributes& msg_attrs, void* arg) {
     auto v = static_cast<std::vector<struct wiphy>*>(arg);
 
     try {
-      auto index = msg.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
+      auto index = msg_attrs.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
       ;
       if (!v->empty() && v->back().index == index) return;
     } catch (...) {
@@ -177,7 +178,7 @@ std::vector<wiphy> get_wiphy_list(Socket& nlsock) {
     }
 
     struct wiphy w;
-    parse_wiphy_message(msg, &w);
+    parse_wiphy_message(msg_attrs, &w);
 
     v->push_back(w);
   };
@@ -204,18 +205,18 @@ wiface get_interface(Socket& nlsock, std::uint32_t if_idx) {
 }
 
 std::vector<wiface> get_interface_list(Socket& nlsock, std::uint32_t wiphy) {
-  auto resp_handler = [](MessageParser& msg, void* arg) {
+  auto resp_handler = [](Attributes& msg_attrs, void* arg) {
     auto v = static_cast<std::vector<struct wiface>*>(arg);
 
     try {
-      auto index = msg.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
+      auto index = msg_attrs.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
       if (!v->empty() && v->back().index == index) return;
     } catch (...) {
       return;
     }
 
     struct wiface i;
-    parse_interface_message(msg, &i);
+    parse_interface_message(msg_attrs, &i);
     v->push_back(i);
   };
   Message msg(NL80211_CMD_GET_INTERFACE, nlsock.get_driver_id(), NLM_F_DUMP);
