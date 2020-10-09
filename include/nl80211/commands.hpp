@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <set>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
