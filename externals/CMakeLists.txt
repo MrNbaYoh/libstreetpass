@@ -39,7 +39,7 @@ if(NOT PkgConfig_FOUND)
     message(FATAL_ERROR "pkg-config is required to find libcrypto++ on the system!")
 else()
     # Find libnl on the system.
-    pkg_check_modules(LIBCRYPTOPP REQUIRED libcrypto++)
+    pkg_check_modules(LIBCRYPTOPP REQUIRED libcryptopp)
 endif()
 
 # libtins
