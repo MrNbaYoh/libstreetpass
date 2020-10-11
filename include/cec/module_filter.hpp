@@ -57,7 +57,7 @@ class ModuleFilter : public ICecFormat {
 
     unsigned byte_size() const;
     bool match(RawBytesFilter const& other) const;
-    bytes to_bytes() const;
+    explicit operator bytes() const;
     friend std::ostream& operator<<(std::ostream& s, const RawBytesFilter& f);
 
    private:
@@ -88,7 +88,7 @@ class ModuleFilter : public ICecFormat {
 
       bool match(MVE const& other) const;
 
-      bytes to_bytes() const;
+      explicit operator bytes() const;
       friend std::ostream& operator<<(std::ostream& s, const ModuleFilter& l);
 
       inline unsigned byte_size() const { return sizeof(title_filter_mve); }
@@ -122,7 +122,7 @@ class ModuleFilter : public ICecFormat {
 
     unsigned byte_size() const;
     bool match(TitleFilter const& other) const;
-    bytes to_bytes() const;
+    explicit operator bytes() const;
     friend std::ostream& operator<<(std::ostream& s, const TitleFilter& e);
 
    private:
@@ -161,7 +161,7 @@ class ModuleFilter : public ICecFormat {
 
     unsigned byte_size() const;
     bool match(KeyFilter const& other) const;
-    bytes to_bytes() const;
+    explicit operator bytes() const;
     friend std::ostream& operator<<(std::ostream& s, const KeyFilter& e);
 
    private:
@@ -212,7 +212,7 @@ class ModuleFilter : public ICecFormat {
     unsigned count() const;
     unsigned byte_size() const;
     bool match(FilterList<T> const& other) const;
-    bytes to_bytes() const;
+    explicit operator bytes() const;
 
     template <class E>
     friend std::ostream& operator<<(std::ostream& s, const FilterList<E>& l);
@@ -235,7 +235,7 @@ class ModuleFilter : public ICecFormat {
 
   bool match(ModuleFilter const& other) const;
   unsigned byte_size() const;
-  bytes to_bytes() const;
+  explicit operator bytes() const;
   friend std::ostream& operator<<(std::ostream& s, const ModuleFilter& l);
 
  private:

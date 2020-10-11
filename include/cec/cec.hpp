@@ -17,7 +17,7 @@ using bytes = std::vector<uint8_t>;
 
 class ICecFormat {
  public:
-  virtual bytes to_bytes() const = 0;
+  virtual explicit operator bytes() const = 0;
   virtual unsigned byte_size() const = 0;
 };
 

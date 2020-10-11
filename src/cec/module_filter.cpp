@@ -102,18 +102,18 @@ unsigned ModuleFilter::byte_size() const {
   return buffer_size;
 }
 
-bytes ModuleFilter::to_bytes() const {
+ModuleFilter::operator bytes() const {
   bytes buffer(byte_size());
   OutputMemoryStream stream(buffer);
   if (m_raw_bytes_list.count()) {
-    bytes rbl_bytes = m_raw_bytes_list.to_bytes();
+    bytes rbl_bytes = bytes(m_raw_bytes_list);
     stream.write(rbl_bytes.data(), rbl_bytes.size());
   }
   if (m_title_list.count()) {
-    bytes tl_bytes = m_title_list.to_bytes();
+    bytes tl_bytes = bytes(m_title_list);
     stream.write(tl_bytes.data(), tl_bytes.size());
   }
-  bytes cl_bytes = m_key_list.to_bytes();
+  bytes cl_bytes = bytes(m_key_list);
   stream.write(cl_bytes.data(), cl_bytes.size());
   return buffer;
 }
@@ -167,7 +167,7 @@ bool ModuleFilter::RawBytesFilter::match(
                     other.m_internal.raw_bytes);
 }
 
-bytes ModuleFilter::RawBytesFilter::to_bytes() const {
+ModuleFilter::RawBytesFilter::operator bytes() const {
   bytes buffer(sizeof(m_internal));
   OutputMemoryStream stream(buffer);
   stream.write(m_internal);
@@ -230,7 +230,7 @@ bool ModuleFilter::TitleFilter::MVE::match(
           (other.mask() & this->value()));
 }
 
-bytes ModuleFilter::TitleFilter::MVE::to_bytes() const {
+ModuleFilter::TitleFilter::MVE::operator bytes() const {
   bytes buffer(sizeof(m_internal));
   OutputMemoryStream stream(buffer);
   stream.write(m_internal);
@@ -325,7 +325,7 @@ bool ModuleFilter::TitleFilter::match(
   return match;
 }
 
-bytes ModuleFilter::TitleFilter::to_bytes() const {
+ModuleFilter::TitleFilter::operator bytes() const {
   bytes buffer(sizeof(m_internal) +
                m_mve_list.size() *
                    ModuleFilter::TitleFilter::MVE::fixed_byte_size());
@@ -333,7 +333,7 @@ bytes ModuleFilter::TitleFilter::to_bytes() const {
   stream.write(m_internal);
 
   for (ModuleFilter::TitleFilter::MVE const& mve : m_mve_list) {
-    bytes mve_bytes = mve.to_bytes();
+    bytes mve_bytes = bytes(mve);
     stream.write(mve_bytes.data(), mve_bytes.size());
   }
 
@@ -385,7 +385,7 @@ bool ModuleFilter::KeyFilter::match(ModuleFilter::KeyFilter const&) const {
   return true;
 }
 
-bytes ModuleFilter::KeyFilter::to_bytes() const {
+ModuleFilter::KeyFilter::operator bytes() const {
   bytes buffer(sizeof(m_internal));
   OutputMemoryStream stream(buffer);
   stream.write(m_internal);
@@ -477,12 +477,12 @@ unsigned ModuleFilter::FilterList<T>::count() const {
 }
 
 template <class T>
-bytes ModuleFilter::FilterList<T>::to_bytes() const {
+ModuleFilter::FilterList<T>::operator bytes() const {
   bytes buffer(sizeof(m_internal) + m_internal.length);
   OutputMemoryStream stream(buffer);
   stream.write(m_internal);
   for (T const& e : m_list) {
-    bytes elt_bytes = e.to_bytes();
+    bytes elt_bytes = bytes(e);
     stream.write(elt_bytes.data(), elt_bytes.size());
   }
   return buffer;
