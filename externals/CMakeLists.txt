@@ -34,12 +34,15 @@ else()
     pkg_check_modules(LIBNL REQUIRED libnl-3.0 libnl-genl-3.0)
 endif()
 
-# libcrypto++
+# libcryptopp
 if(NOT PkgConfig_FOUND)
-    message(FATAL_ERROR "pkg-config is required to find libcrypto++ on the system!")
+    message(FATAL_ERROR "pkg-config is required to find libcryptopp on the system!")
 else()
-    # Find libnl on the system.
-    pkg_check_modules(LIBCRYPTOPP REQUIRED libcryptopp)
+    # Find libcryptopp on the system.
+    pkg_check_modules(LIBCRYPTOPP QUIET libcrypto++)
+    if(NOT LIBCRYPTOPP_FOUND)
+        pkg_check_modules(LIBCRYPTOPP REQUIRED libcryptopp)
+    endif()
 endif()
 
 # libtins
