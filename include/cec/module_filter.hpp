@@ -6,6 +6,7 @@
 #include <array>
 #include <cstdint>
 #include <stdexcept>
+#include <type_traits>
 #include <vector>
 
 #include "cec/cec.hpp"
@@ -127,17 +128,23 @@ class ModuleFilter : public ICecFormat {
    private:
     TitleFilter() = default;
 
-    struct title_filter_header {
+    struct title_filter_header_le {
       u32be title_id;  // this one is big endian
-#if __BYTE_ORDER__ == \
-    __ORDER_LITTLE_ENDIAN__  // bitfield layout depends on endianness
-      u8 number_mve : 4;     // number of mve in mve_list
+      // bitfield layout depends on endianness
+      u8 number_mve : 4;  // number of mve in mve_list
       SendMode::send_mode send_mode : 4;
-#else
-      SendMode::send_mode send_mode : 4;
-      u8 number_mve : 4;
-#endif
     } __attribute__((__packed__));
+
+    struct title_filter_header_be {
+      u32be title_id;  // this one is big endian
+      // bitfield layout depends on endianness
+      SendMode::send_mode send_mode : 4;
+      u8 number_mve : 4;  // number of mve in mve_list
+    } __attribute__((__packed__));
+
+    using title_filter_header =
+        std::conditional<__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__,
+                         title_filter_header_le, title_filter_header_be>::type;
 
     title_filter_header m_internal;
     std::vector<MVE> m_mve_list;
@@ -167,17 +174,23 @@ class ModuleFilter : public ICecFormat {
     key_filter m_internal;
   };
 
-  struct filter_list_header {
-#if __BYTE_ORDER__ == \
-    __ORDER_LITTLE_ENDIAN__  // bitfield layout depends on endianness
+  struct filter_list_header_le {
+    // bitfield layout depends on endianness
     u8 flags : 4;
     FilterListMarker::filter_list_marker marker : 4;
-#else
-    FilterListMarker::filter_list_marker marker : 4;
-    u8 flags : 4;
-#endif
     u8 length;
   } __attribute__((__packed__));
+
+  struct filter_list_header_be {
+    // bitfield layout depends on endianness
+    FilterListMarker::filter_list_marker marker : 4;
+    u8 flags : 4;
+    u8 length;
+  } __attribute__((__packed__));
+
+  using filter_list_header =
+      std::conditional<__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__,
+                       filter_list_header_le, filter_list_header_be>::type;
 
   template <class T>
   class FilterList : public ICecFormat {
