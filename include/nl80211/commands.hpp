@@ -20,7 +20,7 @@ struct wiface {
 
 struct band {
   std::set<std::uint32_t> freqs;
-  std::set<std::uint32_t> bitrates;
+  std::set<float> bitrates;
 };
 
 struct wiphy {

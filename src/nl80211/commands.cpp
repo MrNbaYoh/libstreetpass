@@ -49,7 +49,7 @@ void parse_wiphy_message(Attributes& msg_attrs, void* arg) {
       auto rate_attrs = rates.get<Attributes>(id).value();
       auto rate_value =
           rate_attrs.get<std::uint32_t>(NL80211_BITRATE_ATTR_RATE).value();
-      b.bitrates.insert(rate_value);
+      b.bitrates.insert(0.1f * rate_value);
     }
 
     w->bands.push_back(b);
