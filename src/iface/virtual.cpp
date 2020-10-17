@@ -12,8 +12,8 @@ nl80211::wiface VirtualInterface::get_all_info(std::uint32_t index) {
   return nl80211::commands::get_interface(nlsock, index);
 }
 
-std::array<std::uint8_t, 6> VirtualInterface::get_mac_addr() const {
-  return get_all_info(m_index).mac;
+Tins::HWAddress<6> VirtualInterface::get_mac_addr() const {
+  return Tins::HWAddress<6>(get_all_info(m_index).mac.data());
 }
 
 std::string VirtualInterface::get_name() const {

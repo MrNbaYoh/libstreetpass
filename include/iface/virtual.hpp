@@ -1,5 +1,7 @@
 #pragma once
 
+#include <tins/tins.h>
+
 #include <array>
 #include <cstdint>
 #include <string>
@@ -20,7 +22,7 @@ class VirtualInterface {
  public:
   inline std::uint32_t get_id() const noexcept { return m_index; }
 
-  std::array<std::uint8_t, 6> get_mac_addr() const;
+  Tins::HWAddress<6> get_mac_addr() const;
   std::string get_name() const;
   bool is_up() const;
 
