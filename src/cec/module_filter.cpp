@@ -453,7 +453,9 @@ void ModuleFilter::FilterList<T>::filters(std::vector<T> const& filters) {
   uint8_t byte_size = 0;
   for (T filter : filters) {
     unsigned filter_size = filter.byte_size();
-    if (filter_size + byte_size > byte_size)
+    std::cerr << "filter_size " << filter_size << std::endl;
+    std::cerr << "byte_size " << byte_size << std::endl;
+    if (filter_size + byte_size > 0xFF)
       throw std::length_error("Byte size of filter list cannot exceed 0xFF");
     byte_size += filter.byte_size();
   }
