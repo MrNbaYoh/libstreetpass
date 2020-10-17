@@ -16,17 +16,20 @@ class StreetpassInterface : public VirtualInterface {
   StreetpassInterface(PhysicalInterface const& phys, std::string const& name);
   friend class PhysicalInterface;
 
+  Tins::Dot11ProbeResponse make_initial_proberesp(
+      Tins::HWAddress<6> const& peer_addr,
+      cec::ModuleFilter const& module_filter);
+
  public:
   StreetpassInterface(const StreetpassInterface&) = delete;
   StreetpassInterface& operator=(const StreetpassInterface&) = delete;
   StreetpassInterface(StreetpassInterface&&) = delete;
   StreetpassInterface& operator=(StreetpassInterface&&) = delete;
 
-  void scan(unsigned int timeout,
-            std::function<bool(Tins::HWAddress<6> const&,
-                               cec::ModuleFilter const&)> const& filter,
-            std::function<void(Tins::HWAddress<6> const&,
-                               cec::ModuleFilter const&)> const& callback);
+  void scan_with_cb(
+      unsigned int timeout,
+      std::function<bool(Tins::HWAddress<6> const&,
+                         cec::ModuleFilter const&)> const& callback);
   std::map<Tins::HWAddress<6>, cec::ModuleFilter> scan(
       unsigned int timeout,
       std::function<bool(Tins::HWAddress<6> const&,
@@ -34,6 +37,9 @@ class StreetpassInterface : public VirtualInterface {
   std::map<Tins::HWAddress<6>, cec::ModuleFilter> scan(unsigned int timeout);
   std::map<Tins::HWAddress<6>, cec::ModuleFilter> scan(
       unsigned int timeout, cec::ModuleFilter const& module_filter);
+
+  void associate(unsigned int timeout, Tins::HWAddress<6> const& peer_addr,
+                 cec::ModuleFilter const& module_filter);
 
   static const std::string SSID;
   static const Tins::HWAddress<3> OUI;
