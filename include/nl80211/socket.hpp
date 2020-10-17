@@ -30,7 +30,7 @@ class Socket {
   int get_driver_id() const;
   void send_message(Message& msg);
   void recv_messages();
-  void recv_messages(std::function<void(Attributes&, void*)> callback,
+  void recv_messages(std::function<bool(Attributes&, void*)> callback,
                      void* arg, bool disable_seq_check = false,
                      unsigned int timeout = 0);
 };

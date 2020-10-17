@@ -81,7 +81,7 @@ void Socket::recv_messages() {
   if (err < 0) throw NlError(err, "An error occured while receiving messages");
 }
 
-void Socket::recv_messages(std::function<void(Attributes &, void *)> callback,
+void Socket::recv_messages(std::function<bool(Attributes &, void *)> callback,
                            void *arg, bool disable_seq_check,
                            unsigned int timeout) {
   nl_cb *cb = nl_cb_alloc(NL_CB_DEFAULT);
@@ -93,13 +93,16 @@ void Socket::recv_messages(std::function<void(Attributes &, void *)> callback,
   auto recv_msg_cb = [callback, arg, &ex, &err](nl_msg *nlmsg) -> int {
     Attributes msg_attrs(nlmsg);
     try {
-      callback(msg_attrs, arg);
+      bool should_continue = callback(msg_attrs, arg);
+      // if callback returns false, this means we need to stop recv
+      // TODO: use a more explicit enum instead of bool?
+      if (!should_continue) err = 0;
+      return should_continue ? NL_OK : NL_STOP;
     } catch (...) {
       ex = std::current_exception();
       err = -1;
       return NL_STOP;
     }
-    return NL_OK;
   };
 
   auto valid_handler = [](nl_msg *nlmsg, void *arg) {

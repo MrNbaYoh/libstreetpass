@@ -10,7 +10,7 @@ namespace streetpass::nl80211::commands {
 
 namespace {
 
-void parse_wiphy_message(Attributes& msg_attrs, void* arg) {
+bool parse_wiphy_message(Attributes& msg_attrs, void* arg) {
   auto w = static_cast<struct wiphy*>(arg);
 
   w->index = msg_attrs.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
@@ -54,9 +54,11 @@ void parse_wiphy_message(Attributes& msg_attrs, void* arg) {
 
     w->bands.push_back(b);
   }
+
+  return true;
 }
 
-void parse_interface_message(Attributes& msg_attrs, void* arg) {
+bool parse_interface_message(Attributes& msg_attrs, void* arg) {
   auto w = static_cast<struct wiface*>(arg);
 
   w->index = msg_attrs.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
@@ -70,6 +72,8 @@ void parse_interface_message(Attributes& msg_attrs, void* arg) {
 
   auto mac = msg_attrs.get<std::vector<std::uint8_t>>(NL80211_ATTR_MAC).value();
   std::copy_n(mac.begin(), 6, w->mac.begin());
+
+  return true;
 }
 }  // namespace
 
@@ -193,16 +197,16 @@ std::vector<wiphy> get_wiphy_list(Socket& nlsock) {
 
     try {
       auto index = msg_attrs.get<std::uint32_t>(NL80211_ATTR_WIPHY).value();
-      ;
-      if (!v->empty() && v->back().index == index) return;
+      if (!v->empty() && v->back().index == index) return true;
     } catch (...) {
-      return;
+      return true;
     }
 
     struct wiphy w;
     parse_wiphy_message(msg_attrs, &w);
 
     v->push_back(w);
+    return true;
   };
   Message msg(NL80211_CMD_GET_WIPHY, nlsock.get_driver_id(), NLM_F_DUMP);
 
@@ -232,14 +236,16 @@ std::vector<wiface> get_interface_list(Socket& nlsock, std::uint32_t wiphy) {
 
     try {
       auto index = msg_attrs.get<std::uint32_t>(NL80211_ATTR_IFINDEX).value();
-      if (!v->empty() && v->back().index == index) return;
+      if (!v->empty() && v->back().index == index) return true;
     } catch (...) {
-      return;
+      return true;
     }
 
     struct wiface i;
     parse_interface_message(msg_attrs, &i);
     v->push_back(i);
+
+    return true;
   };
   Message msg(NL80211_CMD_GET_INTERFACE, nlsock.get_driver_id(), NLM_F_DUMP);
   msg.put(NL80211_ATTR_WIPHY, wiphy);
