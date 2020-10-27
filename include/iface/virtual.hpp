@@ -20,7 +20,7 @@ class VirtualInterface {
   friend class PhysicalInterface;
 
  public:
-  inline std::uint32_t get_id() const noexcept { return m_index; }
+  constexpr std::uint32_t get_id() const noexcept { return m_index; }
 
   Tins::HWAddress<6> get_mac_addr() const;
   std::string get_name() const;

@@ -91,9 +91,9 @@ class ModuleFilter : public ICecFormat {
       explicit operator bytes() const;
       friend std::ostream& operator<<(std::ostream& s, const ModuleFilter& l);
 
-      inline unsigned byte_size() const { return sizeof(title_filter_mve); }
+      constexpr unsigned byte_size() const { return sizeof(title_filter_mve); }
 
-      inline static unsigned fixed_byte_size() {
+      constexpr static unsigned fixed_byte_size() {
         return sizeof(title_filter_mve);
       }
 

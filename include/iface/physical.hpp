@@ -23,7 +23,7 @@ class PhysicalInterface {
  public:
   PhysicalInterface(std::uint32_t index);
 
-  inline std::uint32_t get_id() const noexcept { return m_index; }
+  constexpr std::uint32_t get_id() const noexcept { return m_index; }
 
   std::string get_name() const;
 

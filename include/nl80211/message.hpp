@@ -47,9 +47,9 @@ class Attribute {
 
   // TODO: move/copy operator/constructors ?
 
-  inline std::uint16_t type() const { return m_type; }
+  constexpr std::uint16_t type() const { return m_type; }
 
-  inline T value() const { return m_content; }
+  constexpr T value() const { return m_content; }
 };
 
 template <>
@@ -61,7 +61,7 @@ class Attribute<void> {
  public:
   Attribute(nlattr* attr);
 
-  inline std::uint16_t type() const { return m_type; }
+  constexpr std::uint16_t type() const { return m_type; }
 };
 
 class Attributes {
