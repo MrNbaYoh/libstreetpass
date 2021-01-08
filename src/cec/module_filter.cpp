@@ -458,6 +458,7 @@ void ModuleFilter::FilterList<T>::filters(std::vector<T> const& filters) {
     byte_size += filter.byte_size();
   }
   m_list = filters;
+  m_internal.length = byte_size;
 }
 
 template <class T>
